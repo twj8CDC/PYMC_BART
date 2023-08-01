@@ -1,0 +1,6 @@
+/mlruns
+/outputs
+/R
+/src
+*.png
+*.csv
