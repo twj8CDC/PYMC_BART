@@ -1,21 +1,24 @@
 ```{r}
-library(tidyverse)
 library(BART)
-library()
 ```
 
 ```{r}
 test = read.csv("outputs/train.csv")
-
+names(test)
 delta = test$status
 times = test$time
 
+test_names = names(test) 
+x_names = grep("X[0-9]+", test_names)
+test_mat = as.matrix(test[x_names])
 
-x = cbind(test$X0, test$X1)
 
+
+# x = cbind(test$X0, test$X1)
+# x
 str(times)
 str(x)
-post = mc.surv.bart(x.train = x, times=times, delta=delta, mc.cores=8, seed=99)
+post = mc.surv.bart(x.train = test_mat, times=times, delta=delta, mc.cores=8, seed=99)
 
 
 str(post)
