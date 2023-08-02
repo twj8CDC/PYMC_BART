@@ -7,7 +7,6 @@ import scipy.stats as sp
 
 
 def sim_surv(N=100, 
-            T=100, 
             x_vars = 1, 
             lambda_f=None, 
             a=2, 
@@ -41,16 +40,10 @@ def sim_surv(N=100,
         error = sp.norm.rvs(0, .5, size = N)
         lmbda=lmbda + error
 
-    # get time series
-    t = np.linspace(0,T, T)
-
-    # calculate survival and event times
-    sv_mat = np.zeros((N, t.shape[0]))
+    
+    # get the event times
     tlat = np.zeros(N)
     for idx, l in enumerate(lmbda):
-        sv = np.exp(-1 * np.power((t/l), a[idx]))
-        sv_mat[idx,:] = sv
-        
         # generate event times 
         unif = np.random.uniform(size=1)
         ev = lmbda[idx] * np.power((-1 * np.log(unif)), 1/a[idx])
@@ -67,10 +60,21 @@ def sim_surv(N=100,
         cens=np.zeros(N)
         t_event = np.ceil(tlat)
         status = np.ones(N)
+    
+    # get max event time
+    T = int(t_event.max())
+    # get time series
+    t = np.linspace(0,T, T)
 
+    # get surv curve true
+    sv_mat = np.zeros((N, t.shape[0]))
+    for idx, l in enumerate(lmbda):
+        sv = np.exp(-1 * np.power((t/l), a[idx]))
+        sv_mat[idx,:] = sv
+        
         
 
-    return sv_mat, x_mat, lmbda, a, tlat, cens, t_event, status
+    return sv_mat, x_mat, lmbda, a, tlat, cens, t_event, status, T
 
 
 
