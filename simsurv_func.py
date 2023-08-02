@@ -105,7 +105,6 @@ def get_y_sklearn(status, t_event):
 def plot_sv(x_mat, sv_mat, t, title="TITLE", save=False, dir=".", show=False):
     dist_x, dist_idx = np.unique(x_mat, axis=0, return_index=True)
     if type(t) == int:
-        print("here")
         tt = np.arange(t)
     else:
         tt = t
