@@ -1,0 +1,76 @@
+```{r}
+library(tidyverse)
+library(BART)
+library()
+```
+
+```{r}
+test = read.csv("outputs/train.csv")
+
+delta = test$status
+times = test$time
+
+
+x = cbind(test$X0, test$X1)
+
+str(times)
+str(x)
+post = mc.surv.bart(x.train = x, times=times, delta=delta, mc.cores=8, seed=99)
+
+
+str(post)
+
+
+
+# get vals
+tst_times = sort(unique(times))
+tst_x = unique(x)
+N = length(tst_times)
+tst_x = tst_x[order(tst_x[,1], tst_x[,2]),]
+
+# fake matrix
+out_x = matrix(nrow = N * nrow(tst_x), ncol = ncol(tst_x) + 1)
+names = c("t")
+for(i in 1:nrow(tst_x)){
+    g = matrix(tst_times)
+    
+    for(j in 1:ncol(tst_x)){
+        o = rep(tst_x[i,j], N)
+        g = cbind(g, o)
+        if(i == 1){
+            names = append(names, paste0("x",j))
+        }
+    }
+    # assign
+    r1 = 1+((i-1)*N)
+    r2 = i*N
+    out_x[r1:r2,] = g
+}
+dimnames(out_x)[[2]] = names
+
+
+pred = predict(post, newdata = out_x, mc.cores=8)
+
+str(pred)
+
+pred$times
+pred$surv.test.mean[1:23]
+plot(pred$times, pred$surv.test.mean[1:23])
+
+
+
+
+df = cbind(data.frame(out_x), pred$surv.test.mean)
+names(df) = c(names, "surv")
+
+# get id
+lbl_mrg = names(df)[grep("x", names(df))]
+mm = paste0("df$",lbl_mrg, collapse=", ")
+id = eval(parse(text = paste0("paste0(",mm, ")")))
+df["id"] = paste0("i",id)
+
+df
+
+write.csv(df, "outputs/rbart_surv.csv")
+plot(df$t, df$surv, type = "step")
+```

@@ -215,15 +215,40 @@ def get_metrics(f_t, f, T, quants = np.array([0.1, 0.25, 0.5, 0.75, 0.9])):
     
     return rmse, bias, t_out
 
-def plot_metrics(t_quant, T, rsf, cph, bart, title, dir):
+def plot_metrics(t_quant, T, rsf, cph, bart, rb, title, dir):
+    # this should be kwarged
     try:
         fig = plt.figure()
         plt.plot(t_quant, rsf, label="rsf")
         plt.plot(t_quant, cph, label = "cph")
         plt.plot(t_quant, bart, label = "bart")
+        plt.plot(t_quant, rb, label= "r_bart")
         plt.xticks(np.arange(0,T,4))
         plt.legend()
         plt.title(title)
         plt.savefig(f"{dir}/{title}.png")
     finally:
         plt.close(fig)
+
+def get_rbart_data(file):
+    # formats the rbart outptu to the same as py models
+    rb_surv = pd.read_csv(file)
+    
+    # get times
+    rb_sv_t = np.unique(rb_surv["t"].to_numpy())
+    
+    # get survival
+    rb_sv_fx = list()
+    for i in rb_surv[["id", "surv"]].groupby(["id"]):
+        j = i[1]["surv"].to_numpy()
+        rb_sv_fx.append(j)
+    
+    # add time 0
+    rb_sv_t = np.concatenate([np.array([0]), rb_sv_t])
+    rb_sv_val = [np.concatenate([np.array([1]), sv]) for sv in rb_sv_fx]
+    # get x matrix
+    x_col = [nm for nm in rb_surv.columns if "x" in nm]
+    rb_mat = rb_surv[x_col]
+    rb_x, rb_idx = np.unique(rb_mat, axis=0, return_index=True)
+
+    return rb_mat, rb_x, rb_idx, rb_sv_t, rb_sv_val

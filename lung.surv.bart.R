@@ -30,6 +30,7 @@ table(delta)
 ## matrix of observed covariates
 x.train <- cbind(lung$sex, lung$age, lung$ph.karno)
 
+
 ## lung$sex:        Male=1 Female=2
 ## lung$age:        Age in years
 ## lung$ph.karno:   Karnofsky performance score (dead=0:normal=100:by=10)
@@ -40,7 +41,7 @@ dimnames(x.train)[[2]] <- c('M(1):F(2)', 'age(39:82)', 'ph.karno(50:100:10)')
 table(x.train[ , 1])
 summary(x.train[ , 2])
 table(x.train[ , 3])
-
+str(x.train)
 ## run one long MCMC chain in one process
 ## set.seed(99)
 ## post <- surv.bart(x.train=x.train, times=times, delta=delta, x.test=x.test)
