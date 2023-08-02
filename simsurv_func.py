@@ -1,5 +1,11 @@
 # PH: 𝛼 = 2.0, 𝜆 = exp{3 + 0.1(x1 + x2 + x3 + x4 + x5 + x6) + x7}
 #S(t|𝛼, 𝜆) = e ^−(t∕𝜆)𝛼
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import scipy.stats as sp
+
+
 def sim_surv(N=100, 
             T=100, 
             x_vars = 1, 
@@ -173,3 +179,47 @@ def get_bart_test(x_out, T):
     d4[:,0] = d2
     d4[:,1:(s1+1)] = d3
     return d4
+
+def get_sv_fx(pp, x_out):
+    p0 = pp.posterior_predictive["mu"].values.shape[0]
+    p1 = pp.posterior_predictive["mu"].values.shape[1]
+    p2 = pp.posterior_predictive["mu"].values.shape[2]
+    r0 = x_out.shape[0]
+    r1 = int(p2/r0)
+    pp_post = pp.posterior_predictive["mu"].values.reshape(p0*p1, p2).mean(axis=0).reshape(r0, r1)
+    sv = (1-pp_post).cumprod(axis=1)
+    return sv
+
+def get_metrics(f_t, f, T, quants = np.array([0.1, 0.25, 0.5, 0.75, 0.9])):
+    # t_quant = np.array(np.ceil(np.quantile(np.arange(T), quants)), dtype="int")
+    # t_quant = np.array(np.ceil(np.quantile(T, quants)), dtype="int")
+    q1 = int(np.ceil(T.shape[0]/4))
+    q2 = q1 * 2
+    q3 = q1 * 3
+    t_quant = [2,q1,q2,q3,-2]
+    
+    
+    t_out = T[t_quant]
+    # print(t_out)
+    # f_t = np.matrix(rsf_fx)[:,t_quant]
+    f_t = np.matrix(f_t)[:,t_quant]
+    f = np.matrix(f)[:, t_quant]
+    # f = np.matrix(sv_mat[dist_idx])[:, t_quant]
+
+    rmse = np.round(np.sqrt(np.mean(np.power(f_t - f, 2), axis=0)), 4)
+    bias = np.round(np.mean(f_t - f, axis = 0), 4)
+    
+    return rmse, bias, t_out
+
+def plot_metrics(t_quant, T, rsf, cph, bart, title, dir):
+    try:
+        fig = plt.figure()
+        plt.plot(t_quant, rsf, label="rsf")
+        plt.plot(t_quant, cph, label = "cph")
+        plt.plot(t_quant, bart, label = "bart")
+        plt.xticks(np.arange(0,T,4))
+        plt.legend()
+        plt.title(title)
+        plt.savefig(f"{dir}/{title}.png")
+    finally:
+        plt.close(fig)
