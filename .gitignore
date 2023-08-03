@@ -2,5 +2,6 @@
 /outputs
 /R
 /src
+/old
 *.png
 *.csv

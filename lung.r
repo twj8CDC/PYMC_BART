@@ -1,2 +1,0 @@
-read.rda("lung.rda")
-
