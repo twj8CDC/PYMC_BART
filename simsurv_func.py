@@ -130,6 +130,36 @@ def plot_sv(x_mat, sv_mat, t, title="TITLE", save=False, dir=".", show=False):
     finally:
         plt.close(fig)
 
+def plot_sv2(x_mat, sv_mat, t, title="TITLE", save=False, dir=".", show=False):
+    dist_x, dist_idx = np.unique(x_mat, axis=0, return_index=True)
+    if type(t) == int:
+        tt = np.arange(t)
+    else:
+        tt = t
+
+    # print(tt)
+    try:
+        fig = plt.figure()
+        if len(sv_mat) != len(dist_idx):
+            for idx, i in enumerate(sv_mat[dist_idx]):
+                plt.plot(tt, i, label = str(dist_x[idx]))
+                plt.legend()
+                plt.title(title)
+        else:
+            for idx, i in enumerate(sv_mat):
+                # plt.step(i.x, i.y, label = str(dist_x[idx]))
+                plt.plot(tt, i, label = str(dist_x[idx]))
+                plt.legend()
+                plt.title(title)
+        if show:
+            plt.show()
+        if save:
+            plt.savefig(f"{dir}/{title}.png")
+    finally:
+        plt.close(fig)
+        return(fig)
+
+
 def surv_pre_train2(data_x_n, data_y, X_TIME=True):
     # set up times
     # t_sort = np.append([0], np.unique(data_y["Survival_in_days"]))
