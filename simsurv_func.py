@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.stats as sp
+import pyspark
+
 
 
 def sim_surv(N=100, 
@@ -95,7 +97,8 @@ def get_event_time_metric(t_event):
 
 def get_train_matrix(x_mat, t_event, status):
     et = pd.DataFrame({"status": status, "time":t_event})
-    train = pd.concat([et, pd.DataFrame(x_mat)],axis=1)
+    col_names = ["X" + str(i) for i in np.arange(x_mat.shape[1])]
+    train = pd.concat([et, pd.DataFrame(x_mat, columns = col_names)],axis=1)
     return train
 
 def get_y_sklearn(status, t_event):
@@ -259,9 +262,10 @@ def plot_metrics(t_quant, T, rsf, cph, bart, rb, title, dir):
     finally:
         plt.close(fig)
 
-def get_rbart_data(file):
+def get_rbart_data(rb_surv):
     # formats the rbart outptu to the same as py models
-    rb_surv = pd.read_csv(file)
+    # rb_surv = spark.sql("select * from {file}").toPandas()
+    # rb_surv = pd.read_csv(file)
     
     # get times
     rb_sv_t = np.unique(rb_surv["t"].to_numpy())
