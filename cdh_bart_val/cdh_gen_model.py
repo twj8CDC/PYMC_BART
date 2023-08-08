@@ -243,10 +243,10 @@ with mlflow.start_run(experiment_id=experiment_id, run_id=run_id) as run:
 
         ################################################################################
         # BART
-        M = 200 # number of trees
-        DRAWS = 200
-        TUNE = 200
-        CORES = 4
+        M = 50 # number of trees
+        DRAWS = 1000
+        TUNE = 1000
+        CORES = 8
         mlflow.log_param("n_tree", M)
         mlflow.log_param("draws", DRAWS)
         mlflow.log_param("tune", TUNE)
@@ -264,7 +264,7 @@ with mlflow.start_run(experiment_id=experiment_id, run_id=run_id) as run:
             z = pm.Deterministic("z", f + off)
             mu = pm.Deterministic("mu", pm.math.invprobit(z))
             y_pred = pm.Bernoulli("y_pred", p=mu, observed=b_tr_delta, shape=x_data.shape[0])
-            bdata = pm.sample(random_seed=2, draws=200, tune = 200, cores=8)
+            bdata = pm.sample(random_seed=2, draws=DRAWS, tune = TUNE, cores=CORES)
 
         with bart:
         # pm.set_data({"x":pd.DataFrame(test_x), "off":off_test})
