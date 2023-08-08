@@ -1,0 +1,370 @@
+{
+    "job_id": 922542220035797,
+    "creator_user_name": "twj8@cdc.gov",
+    "run_as_user_name": "twj8@cdc.gov",
+    "run_as_owner": true,
+    "settings": {
+        "name": "cdh_bart_val_run_git",
+        "email_notifications": {
+            "no_alert_for_skipped_runs": false
+        },
+        "webhook_notifications": {},
+        "timeout_seconds": 0,
+        "max_concurrent_runs": 1,
+        "tasks": [
+            {
+                "task_key": "cdh-ml-init",
+                "run_if": "ALL_SUCCESS",
+                "notebook_task": {
+                    "notebook_path": "cdh_bart_val/cdh_ml_init",
+                    "base_parameters": {
+                        "alpha": "3",
+                        "n": "300",
+                        "x_vars": "2",
+                        "lambda": "np.exp(2 + 0.4*(x_mat[:,0] + x_mat[:,1]))",
+                        "cens_ind": "False",
+                        "run_name": "multi_1",
+                        "alpha_f": "None",
+                        "experiment_id": "2256023545555400",
+                        "cens_scale": "60"
+                    },
+                    "source": "GIT"
+                },
+                "existing_cluster_id": "1026-182702-777647vg",
+                "timeout_seconds": 0,
+                "email_notifications": {},
+                "notification_settings": {
+                    "no_alert_for_skipped_runs": false,
+                    "no_alert_for_canceled_runs": false,
+                    "alert_on_last_attempt": false
+                }
+            },
+            {
+                "task_key": "cdh-ml-run",
+                "depends_on": [
+                    {
+                        "task_key": "cdh-ml-init"
+                    }
+                ],
+                "run_if": "ALL_SUCCESS",
+                "notebook_task": {
+                    "notebook_path": "cdh_bart_val/cdh_ml_run",
+                    "source": "GIT"
+                },
+                "existing_cluster_id": "1026-182702-777647vg",
+                "timeout_seconds": 0,
+                "email_notifications": {},
+                "notification_settings": {
+                    "no_alert_for_skipped_runs": false,
+                    "no_alert_for_canceled_runs": false,
+                    "alert_on_last_attempt": false
+                }
+            },
+            {
+                "task_key": "cdh-gen-model-1",
+                "depends_on": [
+                    {
+                        "task_key": "cdh-ml-run"
+                    }
+                ],
+                "run_if": "ALL_SUCCESS",
+                "notebook_task": {
+                    "notebook_path": "cdh_bart_val/cdh_gen_model",
+                    "base_parameters": {
+                        "sub_run_name": "sub_1",
+                        "seed": "1"
+                    },
+                    "source": "GIT"
+                },
+                "existing_cluster_id": "1026-182702-777647vg",
+                "timeout_seconds": 0,
+                "email_notifications": {},
+                "notification_settings": {
+                    "no_alert_for_skipped_runs": false,
+                    "no_alert_for_canceled_runs": false,
+                    "alert_on_last_attempt": false
+                }
+            },
+            {
+                "task_key": "cdh-gen-model-10",
+                "depends_on": [
+                    {
+                        "task_key": "cdh-ml-run"
+                    }
+                ],
+                "run_if": "ALL_SUCCESS",
+                "notebook_task": {
+                    "notebook_path": "cdh_bart_val/cdh_gen_model",
+                    "base_parameters": {
+                        "sub_run_name": "sub_5",
+                        "seed": "10"
+                    },
+                    "source": "GIT"
+                },
+                "existing_cluster_id": "1026-182702-777647vg",
+                "timeout_seconds": 0,
+                "email_notifications": {},
+                "notification_settings": {
+                    "no_alert_for_skipped_runs": false,
+                    "no_alert_for_canceled_runs": false,
+                    "alert_on_last_attempt": false
+                }
+            },
+            {
+                "task_key": "cdh-gen-model-2",
+                "depends_on": [
+                    {
+                        "task_key": "cdh-ml-run"
+                    }
+                ],
+                "run_if": "ALL_SUCCESS",
+                "notebook_task": {
+                    "notebook_path": "cdh_bart_val/cdh_gen_model",
+                    "base_parameters": {
+                        "sub_run_name": "sub_2",
+                        "seed": "2"
+                    },
+                    "source": "GIT"
+                },
+                "existing_cluster_id": "1026-182702-777647vg",
+                "timeout_seconds": 0,
+                "email_notifications": {},
+                "notification_settings": {
+                    "no_alert_for_skipped_runs": false,
+                    "no_alert_for_canceled_runs": false,
+                    "alert_on_last_attempt": false
+                }
+            },
+            {
+                "task_key": "cdh-gen-model-3",
+                "depends_on": [
+                    {
+                        "task_key": "cdh-ml-run"
+                    }
+                ],
+                "run_if": "ALL_SUCCESS",
+                "notebook_task": {
+                    "notebook_path": "cdh_bart_val/cdh_gen_model",
+                    "base_parameters": {
+                        "sub_run_name": "sub_3",
+                        "seed": "3"
+                    },
+                    "source": "GIT"
+                },
+                "existing_cluster_id": "1026-182702-777647vg",
+                "timeout_seconds": 0,
+                "email_notifications": {},
+                "notification_settings": {
+                    "no_alert_for_skipped_runs": false,
+                    "no_alert_for_canceled_runs": false,
+                    "alert_on_last_attempt": false
+                }
+            },
+            {
+                "task_key": "cdh-gen-model-4",
+                "depends_on": [
+                    {
+                        "task_key": "cdh-ml-run"
+                    }
+                ],
+                "run_if": "ALL_SUCCESS",
+                "notebook_task": {
+                    "notebook_path": "cdh_bart_val/cdh_gen_model",
+                    "base_parameters": {
+                        "sub_run_name": "sub_4",
+                        "seed": "4"
+                    },
+                    "source": "GIT"
+                },
+                "existing_cluster_id": "1026-182702-777647vg",
+                "timeout_seconds": 0,
+                "email_notifications": {},
+                "notification_settings": {
+                    "no_alert_for_skipped_runs": false,
+                    "no_alert_for_canceled_runs": false,
+                    "alert_on_last_attempt": false
+                }
+            },
+            {
+                "task_key": "cdh-gen-model-5",
+                "depends_on": [
+                    {
+                        "task_key": "cdh-ml-run"
+                    }
+                ],
+                "run_if": "ALL_SUCCESS",
+                "notebook_task": {
+                    "notebook_path": "cdh_bart_val/cdh_gen_model",
+                    "base_parameters": {
+                        "sub_run_name": "sub_5",
+                        "seed": "5"
+                    },
+                    "source": "GIT"
+                },
+                "existing_cluster_id": "1026-182702-777647vg",
+                "timeout_seconds": 0,
+                "email_notifications": {},
+                "notification_settings": {
+                    "no_alert_for_skipped_runs": false,
+                    "no_alert_for_canceled_runs": false,
+                    "alert_on_last_attempt": false
+                }
+            },
+            {
+                "task_key": "cdh-gen-model-6",
+                "depends_on": [
+                    {
+                        "task_key": "cdh-ml-run"
+                    }
+                ],
+                "run_if": "ALL_SUCCESS",
+                "notebook_task": {
+                    "notebook_path": "cdh_bart_val/cdh_gen_model",
+                    "base_parameters": {
+                        "sub_run_name": "sub_5",
+                        "seed": "6"
+                    },
+                    "source": "GIT"
+                },
+                "existing_cluster_id": "1026-182702-777647vg",
+                "timeout_seconds": 0,
+                "email_notifications": {},
+                "notification_settings": {
+                    "no_alert_for_skipped_runs": false,
+                    "no_alert_for_canceled_runs": false,
+                    "alert_on_last_attempt": false
+                }
+            },
+            {
+                "task_key": "cdh-gen-model-7",
+                "depends_on": [
+                    {
+                        "task_key": "cdh-ml-run"
+                    }
+                ],
+                "run_if": "ALL_SUCCESS",
+                "notebook_task": {
+                    "notebook_path": "cdh_bart_val/cdh_gen_model",
+                    "base_parameters": {
+                        "sub_run_name": "sub_5",
+                        "seed": "7"
+                    },
+                    "source": "GIT"
+                },
+                "existing_cluster_id": "1026-182702-777647vg",
+                "timeout_seconds": 0,
+                "email_notifications": {},
+                "notification_settings": {
+                    "no_alert_for_skipped_runs": false,
+                    "no_alert_for_canceled_runs": false,
+                    "alert_on_last_attempt": false
+                }
+            },
+            {
+                "task_key": "cdh-gen-model-8",
+                "depends_on": [
+                    {
+                        "task_key": "cdh-ml-run"
+                    }
+                ],
+                "run_if": "ALL_SUCCESS",
+                "notebook_task": {
+                    "notebook_path": "cdh_bart_val/cdh_gen_model",
+                    "base_parameters": {
+                        "sub_run_name": "sub_5",
+                        "seed": "8"
+                    },
+                    "source": "GIT"
+                },
+                "existing_cluster_id": "1026-182702-777647vg",
+                "timeout_seconds": 0,
+                "email_notifications": {},
+                "notification_settings": {
+                    "no_alert_for_skipped_runs": false,
+                    "no_alert_for_canceled_runs": false,
+                    "alert_on_last_attempt": false
+                }
+            },
+            {
+                "task_key": "cdh-gen-model-9",
+                "depends_on": [
+                    {
+                        "task_key": "cdh-ml-run"
+                    }
+                ],
+                "run_if": "ALL_SUCCESS",
+                "notebook_task": {
+                    "notebook_path": "cdh_bart_val/cdh_gen_model",
+                    "base_parameters": {
+                        "sub_run_name": "sub_5",
+                        "seed": "9"
+                    },
+                    "source": "GIT"
+                },
+                "existing_cluster_id": "1026-182702-777647vg",
+                "timeout_seconds": 0,
+                "email_notifications": {},
+                "notification_settings": {
+                    "no_alert_for_skipped_runs": false,
+                    "no_alert_for_canceled_runs": false,
+                    "alert_on_last_attempt": false
+                }
+            },
+            {
+                "task_key": "cdh-model-summary",
+                "depends_on": [
+                    {
+                        "task_key": "cdh-gen-model-3"
+                    },
+                    {
+                        "task_key": "cdh-gen-model-9"
+                    },
+                    {
+                        "task_key": "cdh-gen-model-10"
+                    },
+                    {
+                        "task_key": "cdh-gen-model-8"
+                    },
+                    {
+                        "task_key": "cdh-gen-model-5"
+                    },
+                    {
+                        "task_key": "cdh-gen-model-4"
+                    },
+                    {
+                        "task_key": "cdh-gen-model-2"
+                    },
+                    {
+                        "task_key": "cdh-gen-model-6"
+                    },
+                    {
+                        "task_key": "cdh-gen-model-7"
+                    },
+                    {
+                        "task_key": "cdh-gen-model-1"
+                    }
+                ],
+                "run_if": "ALL_SUCCESS",
+                "notebook_task": {
+                    "notebook_path": "cdh_bart_val/cdh_model_summary",
+                    "source": "GIT"
+                },
+                "existing_cluster_id": "1026-182702-777647vg",
+                "timeout_seconds": 0,
+                "email_notifications": {},
+                "notification_settings": {
+                    "no_alert_for_skipped_runs": false,
+                    "no_alert_for_canceled_runs": false,
+                    "alert_on_last_attempt": false
+                }
+            }
+        ],
+        "git_source": {
+            "git_url": "https://github.com/twj8CDC/PYMC_BART.git",
+            "git_provider": "gitHub",
+            "git_branch": "master"
+        },
+        "format": "MULTI_TASK"
+    },
+    "created_time": 1691528480989
+}
