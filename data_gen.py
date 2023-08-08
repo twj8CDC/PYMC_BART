@@ -1,7 +1,9 @@
 # Databricks notebook source
 import sksurv
-# import pymc
-# import pymc_bart
+import sksurv.linear_model
+import sksurv.ensemble
+import pymc as pm
+import pymc_bart as pmb
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -10,6 +12,12 @@ import sklearn as skl
 import scipy.stats as sp
 import simsurv_func as ssf
 import mlflow
+
+
+# COMMAND ----------
+
+import importlib
+importlib.reload(ssf)
 
 # COMMAND ----------
 
@@ -47,7 +55,8 @@ with mlflow.start_run(experiment_id=experiment_id, run_name=run_name) as run:
     CENS_SCALE = 60
     
     ###########################################################################
-    # Simulate data
+    # with mlflow.start_run(experiment_id=experiment_id, run = "sub1") as sub:
+        # Simulate data
     sv_mat, x_mat, lmbda, a, tlat, cens, t_event, status, T = ssf.sim_surv(
                     N=N, 
                     # T=T,
@@ -74,11 +83,11 @@ with mlflow.start_run(experiment_id=experiment_id, run_name=run_name) as run:
     mlflow.log_param("CENS_IND", CENS_IND)
     # log param x_info
     x_out, x_idx, x_cnt = ssf.get_x_info(x_mat)
-    # try:
-    #     mlflow.log_param("X_INFO", str(list(zip(x_out, x_cnt))))
-    # except:
-    #     print("error")
-    mlflow.log_dict("X_INFO", dict(zip(x_out, x_cnt)))
+    try:
+        mlflow.log_param("X_INFO", str(list(zip(x_out, x_cnt))))
+    except:
+        print("error")
+    # mlflow.log_dict("X_INFO", dict(zip(x_out, x_cnt)))
 
     # log metric cen percent calculated
     # log metric status event calculated
@@ -95,17 +104,30 @@ with mlflow.start_run(experiment_id=experiment_id, run_name=run_name) as run:
     # log artif train dataset
     train = ssf.get_train_matrix(x_mat, t_event, status)
     mlflow.log_table(train.to_dict(), "train")
+    
     # data = mlflow.data.from_pandas(train)
     # mlflow.log_input(data)
 
+    # log artif plot curves
+    title = "actual_survival"
+    fig = ssf.plot_sv2(x_mat, sv_mat, T, title=title, save = False, dir=OUTPUTS)
+    # mlflow.log_artifact(f"{OUTPUTS}/{title}.png")
+    mlflow.log_figure(fig, f"{title}.png")
+    
+
+    # get sklearn components
+    y_sk = ssf.get_y_sklearn(status, t_event)
+    x_sk = train.iloc[:,2:]
+
+    ###########################################################################
     # model cph
     cph = sksurv.linear_model.CoxPHSurvivalAnalysis()
     cph.fit(x_sk, y_sk)
     # log metri coeff
     for i in np.arange(len(cph.coef_)):
-        ml.log_metric(f"cph_coef_{i}", cph.coef_[i])
+        mlflow.log_metric(f"cph_coef_{i}", cph.coef_[i])
         # log metri exp(coef)
-        ml.log_metric(f"cph_exp_coef_{i}", np.exp(cph.coef_[i]))
+        mlflow.log_metric(f"cph_exp_coef_{i}", np.exp(cph.coef_[i]))
     # predic cph
     cph_surv = cph.predict_survival_function(pd.DataFrame(x_out))
 
@@ -118,10 +140,260 @@ with mlflow.start_run(experiment_id=experiment_id, run_name=run_name) as run:
 
     # log artif plot curves
     title = "cph_surv_pred"
-    ssf.plot_sv(x_mat, cph_sv_val, t=cph_sv_t, title = title, save=True, dir="outputs")
-    ml.log_artifact(f"outputs/{title}.png")
+    fig = ssf.plot_sv2(x_mat, cph_sv_val, t=cph_sv_t, title = title, save=False, dir=OUTPUTS)
+    mlflow.log_figure(fig, f"{title}.png")
+    # mlflow.log_artifact(f"outputs/{title}.png")
     # log model cph
     # idk how to do
+
+    ###################################################################################
+    #  model rsf
+    rsf = sksurv.ensemble.RandomSurvivalForest(
+        n_estimators=1000, min_samples_split=0.5, min_samples_leaf=15, n_jobs=-1, random_state=20
+    )
+    rsf.fit(x_sk, y_sk)
+    # predict rsf
+    rsf_surv = rsf.predict_survival_function(pd.DataFrame(x_out))
+    # get plotable predictions
+    # rsf_sv_val = [sf(np.arange(T)) for sf in rsf_surv]
+    rsf_sv_t = rsf_surv[0].x
+    rsf_sv_val = [sf(rsf_sv_t) for sf in rsf_surv]
+    rsf_sv_t = np.concatenate([np.array([0]), rsf_sv_t])
+    rsf_sv_val = [np.concatenate([np.array([1]), sv]) for sv in rsf_sv_val]
+    # log artif plot curves
+    title = "rsf_surv_pred"
+    fig = ssf.plot_sv2(x_mat, rsf_sv_val, t=rsf_sv_t, title=title, save=False, dir=OUTPUTS)
+    mlflow.log_figure(fig, f"{title}.png")
+    # ml.log_artifact(f"outputs/{title}.png")
+    # log model resf
+
+    ################################################################################
+    # BART
+    M = 200 # number of trees
+    DRAWS = 200
+    TUNE = 200
+    CORES = 4
+    mlflow.log_param("n_tree", M)
+    mlflow.log_param("draws", DRAWS)
+    mlflow.log_param("tune", TUNE)
+
+    # tranform data long-form
+    b_tr_t, b_tr_delta, b_tr_x = ssf.surv_pre_train2(x_sk, y_sk)
+    # b_te_t, b_te_x = surv_pre_test(x_sk, y_sk)
+    b_te_x = ssf.get_bart_test(x_out, np.unique(b_tr_t))
+    off = sp.norm.ppf(np.mean(b_tr_delta))
+    # model bart
+
+    with pm.Model() as bart:
+        x_data = pm.MutableData("x", b_tr_x)
+        f = pmb.BART("f", X=x_data, Y=b_tr_delta, m=M)
+        z = pm.Deterministic("z", f + off)
+        mu = pm.Deterministic("mu", pm.math.invprobit(z))
+        y_pred = pm.Bernoulli("y_pred", p=mu, observed=b_tr_delta, shape=x_data.shape[0])
+        bdata = pm.sample(random_seed=2, draws=200, tune = 200, cores=8)
+
+    with bart:
+    # pm.set_data({"x":pd.DataFrame(test_x), "off":off_test})
+        pm.set_data({"x":pd.DataFrame(b_te_x)})
+        pp = pm.sample_posterior_predictive(bdata, var_names = ["y_pred", "f", "z", "mu"])
+    
+    # transform to survival
+    bart_sv_fx = ssf.get_sv_fx(pp, x_out)
+    # bart_svt
+    bart_sv_t = np.unique(b_tr_t)
+
+    # add a time 0 with prob 1 
+    bart_sv_t = np.concatenate([np.array([0]), bart_sv_t])
+    bart_sv_val = [np.concatenate([np.array([1]), sv]) for sv in bart_sv_fx]
+    
+    # log artif plot curves
+    title = "bart_surv_pred"
+    fig = ssf.plot_sv2(x_mat, bart_sv_val, t=bart_sv_t, title=title, save=False, dir="outputs")
+    mlflow.log_figure(fig, f"{title}.png")
+    
+
+    ######################################################################
+    # get metrics rmse, bias
+    rsf_rmse, rsf_bias, t_quant = ssf.get_metrics( f_t = rsf_sv_val, f = sv_mat[x_idx], T = rsf_sv_t[rsf_sv_t <T])
+
+    cph_rmse, cph_bias, t_quant = ssf.get_metrics( f_t = cph_sv_val, f = sv_mat[x_idx], T = cph_sv_t[cph_sv_t < T])
+
+    bart_rmse, bart_bias, t_quant = ssf.get_metrics(f_t = bart_sv_val, f = sv_mat[x_idx], T = bart_sv_t[bart_sv_t < T])
+
+    # log metri cph_rmse
+    # log metri cph_bias
+    # log metri rsf_rmse
+    # log metri rsf_bias
+    # log metri bart_rmse
+    # log metri bart_bias
+    # for i in np.arange(rsf_rmse.shape[1]):
+    #     mlflow.log_metric(f"rmse_rsf_{i}", rsf_rmse[0,i])
+    #     mlflow.log_metric(f"rmse_cph_{i}", cph_rmse[0,i])
+    #     mlflow.log_metric(f"rmse_bart_{i}", bart_rmse[0,i])
+    #     mlflow.log_metric(f"bias_rsf_{i}", rsf_bias[0,i])
+    #     mlflow.log_metric(f"bias_cph_{i}", cph_bias[0,i])
+    #     mlflow.log_metric(f"bias_bart_{i}", bart_bias[0,i])
+    rmse_dict = dict({"t":t_quant.tolist(), 
+                        "rsf":rsf_rmse.tolist()[0], 
+                        "cph":cph_rmse.tolist()[0],
+                        "bart":bart_rmse.tolist()[0]})
+    mlflow.log_table(rmse_dict, "rmse_dict")
+
+
+
+# COMMAND ----------
+
+import pyspark
+temp = spark.createDataFrame(pd.DataFrame(rmse_dict))
+pyspark.sql.DataFrame.createOrReplaceTempView(temp, "test")
+
+# COMMAND ----------
+
+rsf = sksurv.ensemble.RandomSurvivalForest(
+    n_estimators=1000, min_samples_split=.5, min_samples_leaf=0.1, n_jobs=-1, random_state=20
+)
+
+rsf.fit(x_sk, y_sk)
+
+rsf_surv = rsf.predict_survival_function(pd.DataFrame(x_out))
+# get plotable predictions
+# rsf_sv_val = [sf(np.arange(T)) for sf in rsf_surv]
+rsf_sv_t = rsf_surv[0].x
+rsf_sv_val = [sf(rsf_sv_t) for sf in rsf_surv]
+rsf_sv_t = np.concatenate([np.array([0]), rsf_sv_t])
+rsf_sv_val = [np.concatenate([np.array([1]), sv]) for sv in rsf_sv_val]
+# log artif plot curves
+title = "rsf_surv_pred"
+fig = ssf.plot_sv2(x_mat, rsf_sv_val, t=rsf_sv_t, title=title, show=True, save=False, dir=OUTPUTS)
+# mlflow.log_figure(fig, f"{title}.png")
+
+# COMMAND ----------
+
+y_sk
+
+# COMMAND ----------
+
+
+run = mlflow.get_run(mlflow.last_active_run().info.run_id)
+run
+
+# COMMAND ----------
+
+run_id = run.info.run_id
+mlflow.load_table("train")
+
+# COMMAND ----------
+
+# MAGIC %r
+# MAGIC # install.packages("mlflow")
+# MAGIC install.packages("SparkR")
+
+# COMMAND ----------
+
+# MAGIC %r
+# MAGIC library(mlflow)
+# MAGIC library(SparkR)
+# MAGIC
+
+# COMMAND ----------
+
+# MAGIC %r
+# MAGIC s = SparkR::sql("select * from test")
+# MAGIC SparkR::as.DataFrame(s)
+
+# COMMAND ----------
+
+# MAGIC %r
+# MAGIC library(BART)
+# MAGIC
+# MAGIC
+# MAGIC
+# MAGIC test = read.csv(input)
+# MAGIC
+# MAGIC # set values
+# MAGIC delta = test$status
+# MAGIC times = test$time
+# MAGIC
+# MAGIC # get x matrix
+# MAGIC test_names = names(test) 
+# MAGIC x_names = grep("X[0-9]+", test_names)
+# MAGIC x_mat = as.matrix(test[x_names])
+# MAGIC
+# MAGIC # train 
+# MAGIC post = mc.surv.bart(x.train = x_mat, times=times, delta=delta, mc.cores=8, seed=99)
+# MAGIC
+# MAGIC # get unique times
+# MAGIC tst_times = sort(unique(times))
+# MAGIC
+# MAGIC # order the x matrix to match python
+# MAGIC tst_x = unique(x_mat)
+# MAGIC sq_x = seq(1, ncol(tst_x),1)
+# MAGIC ord_x = eval(parse(text = paste0('order(', paste0("tst_x[,", sq_x, "]", collapse=","), ")")))
+# MAGIC tst_x = tst_x[ord_x,]
+# MAGIC
+# MAGIC # set N
+# MAGIC N = length(tst_times)
+# MAGIC
+# MAGIC # fake matrix is N * nrow by ncol + 1
+# MAGIC out_x = matrix(nrow = N * nrow(tst_x), ncol = ncol(tst_x) + 1)
+# MAGIC names = c("t")
+# MAGIC # create test matrix blocks and assign to the out_x
+# MAGIC for(i in 1:nrow(tst_x)){
+# MAGIC     g = matrix(tst_times)
+# MAGIC     
+# MAGIC     for(j in 1:ncol(tst_x)){
+# MAGIC         o = rep(tst_x[i,j], N)
+# MAGIC         g = cbind(g, o)
+# MAGIC         if(i == 1){
+# MAGIC             names = append(names, paste0("x",j))
+# MAGIC         }
+# MAGIC     }
+# MAGIC     # assign
+# MAGIC     r1 = 1+((i-1)*N)
+# MAGIC     r2 = i*N
+# MAGIC     out_x[r1:r2,] = g
+# MAGIC }
+# MAGIC # set names for out_x
+# MAGIC dimnames(out_x)[[2]] = names
+# MAGIC
+# MAGIC # get predictions
+# MAGIC pred = predict(post, newdata = out_x, mc.cores=8)
+# MAGIC
+# MAGIC # create the final csv to output
+# MAGIC df = cbind(data.frame(out_x), pred$surv.test.mean)
+# MAGIC names(df) = c(names, "surv")
+# MAGIC
+# MAGIC # get id
+# MAGIC lbl_mrg = names(df)[grep("x", names(df))]
+# MAGIC mm = paste0("df$",lbl_mrg, collapse=", ")
+# MAGIC id = eval(parse(text = paste0("paste0(",mm, ")")))
+# MAGIC df["id"] = paste0("i",id)
+# MAGIC
+# MAGIC write.csv(df, output)
+# MAGIC
+# MAGIC
+# MAGIC
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+p1 = subprocess.Popen([
+        "Rscript",
+        "surv_sim_function.R",
+        TRAIN_CSV,
+        RBART_CSV
+        ])
+    p1.wait()
+
+    # get Rbart data
+    rb_mat, rb_x, rb_idx, rb_sv_t, rb_sv_val = ssf.get_rbart_data(RBART_CSV)
+    # get survival plot
+    title = "rbart_surv_pred"
+    ssf.plot_sv(rb_mat, rb_sv_val, t=rb_sv_t, title=title, show = False, save=True, dir="outputs")
+    ml.log_artifact(f"outputs/{title}.png")
 
 # COMMAND ----------
 
@@ -130,12 +402,27 @@ with mlflow.start_run(experiment_id=experiment_id, run_name=run_name) as run:
     fig, ax = plt.subplots()
     ax.plot(np.arange(10), np.arange(10))
     mlflow.log_figure(fig, "plt.png")
+    with mlflow.start_run(experiment_id=experiment_id, run_name = "sub1", nested=True) as sub:
+        sub1_runid = mlflow.get_experiment()
+        mlflow.log_param("sub1", 1)
+        dicjj = dict({"cph": np.array([0,1])})
+    mlflow.log_table(dicjj, "dicjj")
 
 # COMMAND ----------
 
-fig,ax = plt.subplots()
-ax.plot(np.arange(10), np.arange(10))
+type(dict({"cph": np.array([0,1])}))
 
+# COMMAND ----------
+
+fig= plt.figure()
+plt.plot(np.arange(10), np.arange(10))
+plt.plot(np.arange(10), np.arange(10)*.2)
+plt.close(fig)
+fig
+
+# COMMAND ----------
+
+fig
 
 # COMMAND ----------
 
@@ -143,7 +430,11 @@ run = mlflow.get_run(mlflow.last_active_run().info.run_id)
 
 # COMMAND ----------
 
-mlflow.load_table("train", run_ids=[mlflow.last_active_run().info.run_id])
+mlflow.load_table("dicjj", run_ids=[mlflow.last_active_run().info.run_id])
+
+# COMMAND ----------
+
+mlflow.last_active_run()
 
 # COMMAND ----------
 
