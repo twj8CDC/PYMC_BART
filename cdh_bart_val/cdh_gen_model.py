@@ -250,8 +250,8 @@ with mlflow.start_run(experiment_id=experiment_id, run_id=run_id) as run:
         ################################################################################
         # BART
         M = 50 # number of trees
-        DRAWS = 400
-        TUNE = 400
+        DRAWS = 1000
+        TUNE = 1000
         CORES = 4
         mlflow.log_param("n_tree", M)
         mlflow.log_param("draws", DRAWS)
