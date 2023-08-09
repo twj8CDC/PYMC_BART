@@ -285,3 +285,12 @@ def get_rbart_data(rb_surv):
     rb_x, rb_idx = np.unique(rb_mat, axis=0, return_index=True)
 
     return rb_mat, rb_x, rb_idx, rb_sv_t, rb_sv_val
+
+def get_event_plot(train):
+    fig = plt.figure()
+    plt.hist(train.time[train.status==1], rwidth=.5, label="event")
+    plt.hist(train.time[train.status==0], rwidth=.5, label = "cens")
+    plt.xticks(np.arange(1,train.time.max()+1,2))
+    plt.legend()
+    plt.close(fig)
+    return fig

@@ -125,13 +125,14 @@ with mlflow.start_run(experiment_id=experiment_id, run_id = run_id) as run:
                         # T=T,
                         x_vars=X_VARS,
                         a = ALPHA,
-                        # alpha_f = ALPHA_F,
+                        alpha_f = ALPHA_F,
                         lambda_f = LAMBDA,
                         cens_scale=CENS_SCALE,
                         cens_ind = CENS_IND,
                         err_ind = False)
         # log param alpha
-        mlflow.log_param("alpha", ALPHA)
+        mlflow.log_param("alpha", a) # set to the switched output
+        # mlflow.log_param("apha_f", ALPHA_F)
         # log param labmda
         mlflow.log_param("lambda", LAMBDA)
         # log param N
@@ -177,6 +178,11 @@ with mlflow.start_run(experiment_id=experiment_id, run_id = run_id) as run:
         title = "actual_survival"
         fig = ssf.plot_sv2(x_mat, sv_mat, T, title=title, save = False)
         # mlflow.log_artifact(f"{OUTPUTS}/{title}.png")
+        mlflow.log_figure(fig, f"{title}.png")
+
+        # log event hist
+        title = "event_hist"
+        fig = ssf.get_event_plot(train)
         mlflow.log_figure(fig, f"{title}.png")
         
         # get sklearn components
