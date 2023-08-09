@@ -131,8 +131,8 @@ with mlflow.start_run(experiment_id=experiment_id, run_id = run_id) as run:
                         cens_ind = CENS_IND,
                         err_ind = False)
         # log param alpha
-        mlflow.log_param("alpha", a) # set to the switched output
-        # mlflow.log_param("apha_f", ALPHA_F)
+        mlflow.log_param("alpha", ALPHA) # set to the switched output
+        mlflow.log_param("apha_f", ALPHA_F)
         # log param labmda
         mlflow.log_param("lambda", LAMBDA)
         # log param N
