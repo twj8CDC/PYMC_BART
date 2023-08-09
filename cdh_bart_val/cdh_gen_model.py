@@ -244,8 +244,8 @@ with mlflow.start_run(experiment_id=experiment_id, run_id=run_id) as run:
         ################################################################################
         # BART
         M = 50 # number of trees
-        DRAWS = 200
-        TUNE = 200
+        DRAWS = 400
+        TUNE = 400
         CORES = 4
         mlflow.log_param("n_tree", M)
         mlflow.log_param("draws", DRAWS)
@@ -406,7 +406,3 @@ with mlflow.start_run(experiment_id=experiment_id, run_id=run_id) as run:
                         "rbart":rb_bias.tolist()[0]})
     mlflow.log_table(rmse_dict, "rmse_dict")
     mlflow.log_table(bias_dict, "bias_dict")
-
-# COMMAND ----------
-
-
