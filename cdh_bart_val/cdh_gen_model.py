@@ -272,7 +272,7 @@ with mlflow.start_run(experiment_id=experiment_id, run_id=run_id) as run:
 
         with pm.Model() as bart:
             x_data = pm.MutableData("x", b_tr_x)
-            f = pmb.BART("f", X=x_data, Y=b_tr_delta, m=M)
+            f = pmb.BART("f", X=x_data, Y=b_tr_delta, m=M, alpha=.99)
             z = pm.Deterministic("z", f + off)
             mu = pm.Deterministic("mu", pm.math.invprobit(z))
             y_pred = pm.Bernoulli("y_pred", p=mu, observed=b_tr_delta, shape=x_data.shape[0])
