@@ -39,6 +39,18 @@ else:
 dbutils.widgets.text("cens_scale", defaultValue="60")
 CENS_SCALE = int(dbutils.widgets.get("cens_scale"))
 
+
+# BART
+dbutils.widgets.text("M", defaultValue="500")
+M = int(dbutils.widgets.get("M"))
+dbutils.widgets.text("DRAWS", defaultValue= "200")
+DRAWS = int(dbutils.widgets.get("DRAWS"))
+dbutils.widgets.text("TUNE", defaultValue="200")
+TUNE = int(dbutils.widgets.get("TUNE"))
+dbutils.widgets.text("CORES", defaultValue="4")
+CORES = int(dbutils.widgets.get("CORES")) 
+
+
 dbutils.jobs.taskValues.set('experiment_id',experiment_id)
 dbutils.jobs.taskValues.set("run_name", model_name)
 dbutils.jobs.taskValues.set("alpha", ALPHA)
@@ -48,3 +60,9 @@ dbutils.jobs.taskValues.set("n", N)
 dbutils.jobs.taskValues.set("x_vars", X_VARS)
 dbutils.jobs.taskValues.set("cens_ind", CENS_IND)
 dbutils.jobs.taskValues.set("cens_scale", CENS_SCALE)
+# pymc-bart
+dbutils.jobs.taskValues.set("M", M)
+dbutils.jobs.taskValues.set("DRAWS", DRAWS)
+dbutils.jobs.taskValues.set("TUNE", TUNE)
+dbutils.jobs.taskValues.set("CORES", CORES)
+

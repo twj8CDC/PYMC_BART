@@ -73,6 +73,12 @@ CENS_SCALE = dbutils.jobs.taskValues.get("cdh-ml-init",
                             "cens_scale", 
                             debugValue=60)
 
+#PYMC
+M = dbutils.jobs.taskValues.get("cdh-ml-init", "M", debugValue=500)
+DRAWS = dbutils.jobs.taskValues.get("cdh-ml-init", "DRAWS", debugValue=200)
+TUNE = dbutils.jobs.taskValues.get("cdh-ml-init", "TUNE", debugValue=200)
+CORES = dbutils.jobs.taskValues.get("cdh-ml-init", "CORES", debugValue=4)
+
 # COMMAND ----------
 
 dbutils.widgets.text("sub_run_name", "sub_run")
@@ -248,14 +254,14 @@ with mlflow.start_run(experiment_id=experiment_id, run_id=run_id) as run:
         # log model resf
 
         ################################################################################
-        # BART
-        M = 200 # number of trees
-        DRAWS = 1000
-        TUNE = 1000
-        CORES = 4
-        mlflow.log_param("n_tree", M)
-        mlflow.log_param("draws", DRAWS)
-        mlflow.log_param("tune", TUNE)
+        # # BART
+        # M = 200 # number of trees
+        # DRAWS = 200
+        # TUNE = 200
+        # CORES = 4
+        # mlflow.log_param("n_tree", M)
+        # mlflow.log_param("draws", DRAWS)
+        # mlflow.log_param("tune", TUNE)
 
         # tranform data long-form
         b_tr_t, b_tr_delta, b_tr_x = ssf.surv_pre_train2(x_sk, y_sk)
