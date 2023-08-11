@@ -278,6 +278,7 @@ with mlflow.start_run(experiment_id=experiment_id, run_id=run_id) as run:
                                       pmb.OneHotSplitRule(),
                                       pmb.OneHotSplitRule(),
                                       pmb.OneHotSplitRule(),
+                                      pmb.OneHotSplitRule(),
                                       pmb.OneHotSplitRule()
                                       ])
             z = pm.Deterministic("z", f + off)
