@@ -276,6 +276,7 @@ with mlflow.start_run(experiment_id=experiment_id, run_id=run_id) as run:
             x_data = pm.MutableData("x", b_tr_x)
             f = pmb.BART("f", X=x_data, Y=b_tr_delta, m=M, alpha=.99,
                          split_rules = eval(SPLIT_RULES)
+                        )
                         #  split_rules=[pmb.ContinuousSplitRule(), 
                         #               pmb.OneHotSplitRule(), 
                         #               pmb.OneHotSplitRule(),
