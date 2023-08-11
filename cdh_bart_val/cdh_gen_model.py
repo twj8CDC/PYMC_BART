@@ -73,11 +73,13 @@ CENS_SCALE = dbutils.jobs.taskValues.get("cdh-ml-init",
                             "cens_scale", 
                             debugValue=60)
 
+
 #PYMC
 M = dbutils.jobs.taskValues.get("cdh-ml-init", "M", debugValue=500)
 DRAWS = dbutils.jobs.taskValues.get("cdh-ml-init", "DRAWS", debugValue=200)
 TUNE = dbutils.jobs.taskValues.get("cdh-ml-init", "TUNE", debugValue=200)
 CORES = dbutils.jobs.taskValues.get("cdh-ml-init", "CORES", debugValue=4)
+SPLIT_RULES = dbutils.jobs.taskValues.get("cdh-ml-init", "SPLIT_RULES", debugValue="[pmb.ContinuousSplitRule(), pmb.OneHotSplitRule(), pmb.OneHotSplitRule(),pmb.OneHotSplitRule(),pmb.OneHotSplitRule(), pmb.OneHotSplitRule(),pmb.OneHotSplitRule()]")
 
 # COMMAND ----------
 
@@ -273,14 +275,15 @@ with mlflow.start_run(experiment_id=experiment_id, run_id=run_id) as run:
         with pm.Model() as bart:
             x_data = pm.MutableData("x", b_tr_x)
             f = pmb.BART("f", X=x_data, Y=b_tr_delta, m=M, alpha=.99,
-                         split_rules=[pmb.ContinuousSplitRule(), 
-                                      pmb.OneHotSplitRule(), 
-                                      pmb.OneHotSplitRule(),
-                                      pmb.OneHotSplitRule(),
-                                      pmb.OneHotSplitRule(),
-                                      pmb.OneHotSplitRule(),
-                                      pmb.OneHotSplitRule()
-                                      ])
+                         split_rules = eval(SPLIT_RULES)
+                        #  split_rules=[pmb.ContinuousSplitRule(), 
+                        #               pmb.OneHotSplitRule(), 
+                        #               pmb.OneHotSplitRule(),
+                        #               pmb.OneHotSplitRule(),
+                        #               pmb.OneHotSplitRule(),
+                        #               pmb.OneHotSplitRule(),
+                        #               pmb.OneHotSplitRule()
+                        #               ])
             z = pm.Deterministic("z", f + off)
             mu = pm.Deterministic("mu", pm.math.invprobit(z))
             y_pred = pm.Bernoulli("y_pred", p=mu, observed=b_tr_delta, shape=x_data.shape[0])

@@ -49,6 +49,8 @@ dbutils.widgets.text("TUNE", defaultValue="200")
 TUNE = int(dbutils.widgets.get("TUNE"))
 dbutils.widgets.text("CORES", defaultValue="4")
 CORES = int(dbutils.widgets.get("CORES")) 
+dbutils.widgets.text("SPLIT_RULES", defaultValue="[pmb.ContinuousSplitRule(), pmb.OneHotSplitRule(), pmb.OneHotSplitRule(),pmb.OneHotSplitRule(),pmb.OneHotSplitRule(),pmb.OneHotSplitRule(),pmb.OneHotSplitRule()]")
+SPLIT_RULES = dbutils.widgets.get("SPLIT_RULES")
 
 
 dbutils.jobs.taskValues.set('experiment_id',experiment_id)
@@ -65,4 +67,5 @@ dbutils.jobs.taskValues.set("M", M)
 dbutils.jobs.taskValues.set("DRAWS", DRAWS)
 dbutils.jobs.taskValues.set("TUNE", TUNE)
 dbutils.jobs.taskValues.set("CORES", CORES)
+dbutils.jobs.taskValues.set("SPLIT_RULES", SPLIT_RULES)
 
