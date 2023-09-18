@@ -23,6 +23,11 @@ post <- mc.surv.bart(x.train=x, times=times, delta=delta,
                      x.test=matrix(0:1, nrow=2, ncol=1),
                      K=25, mc.cores=8, seed=99)
 
+post2 <- mc.surv.bart(x.train=x, times=times, delta=delta,
+                     x.test=x,
+                     K=25, mc.cores=8, seed=99)
+
+
 c.true <- l1/(l1+l2)
 c.true
 c.est <- (1-post$prob.test[ , 1])-(1-post$prob.test[ , 26])
@@ -35,3 +40,4 @@ mean(c.est)
 quantile(c.est, probs=c(0.025, 0.975))
 mean(c.est-c.true)
 quantile(c.est-c.true, probs=c(0.025, 0.975))
+

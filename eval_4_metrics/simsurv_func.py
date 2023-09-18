@@ -276,14 +276,15 @@ def get_rbart_data(rb_surv):
         j = i[1]["surv"].to_numpy()
         rb_sv_fx.append(j)
     
-    # rb_pr_fx = list()
-    # for i in rb_surv[["id", "prob"]].groupby(["id"]):
-        # j = i[1]["prob"].to_numpy()
-        # rb_pr_fx.append(j)
+    rb_pr_fx = list()
+    for i in rb_surv[["id", "prob"]].groupby(["id"]):
+        j = i[1]["prob"].to_numpy()
+        rb_pr_fx.append(j)
     
     # add time 0
     rb_sv_t = np.concatenate([np.array([0]), rb_sv_t])
     rb_sv_val = [np.concatenate([np.array([1]), sv]) for sv in rb_sv_fx]
+    rb_pr_val = [np.concatenate([np.array([1]), pr]) for pr in rb_pr_fx]
     # get x matrix
     x_col = [nm for nm in rb_surv.columns if "x" in nm]
     rb_mat = rb_surv[x_col]
