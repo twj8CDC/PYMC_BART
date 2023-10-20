@@ -316,7 +316,8 @@ def sim_surv2(N=100,
             seed=999, 
             cens_ind = True,
             cens_scale = 20,
-            err_ind = False):
+            err_ind = False,
+            T_CHNG = None):
     # np.random.seed(seed)
 
     x_mat = np.zeros((N, x_vars))
@@ -329,8 +330,12 @@ def sim_surv2(N=100,
             x1 = sp.bernoulli.rvs(VAR_PROB[idx], size = N)
         else:
             x1 = np.random.uniform(0, VAR_CLASS[idx], size = N)
-            x1 = np.round(x1, 2)
+            x1 = np.round(x1, 3)
         x_mat[:,idx] = x1
+
+    if x_vars > len(VAR_CLASS):
+        for idx in np.arange(len(VAR_CLASS), x_vars):
+            x_mat[:,idx] = np.random.uniform(0,1,size=N)
     
     # set lambda
     if lambda_f is None:
@@ -388,15 +393,14 @@ def sim_surv2(N=100,
     sv_mat = np.zeros((N, t.shape[0]))
     hz_mat = np.zeros((N, t.shape[0]))
     for idx, l in enumerate(lmbda):
-        # sv = np.exp(-1 * np.power((t/l), a[idx])) # old way
-        # sv = np.power(np.exp(-1*l*t), a[idx]) # new
-        sv = np.exp(-1 * np.power((l*t), a[idx])) # new
-        hz = (l*a[idx]) * np.power(l*t, a[idx]-1)
-        # sv = np.exp(-1* np.cumsum(hz))
-        # print(hz1)
-        # print(np.array(l*t))
-        # hz2 = np.exp(l*t, (a[idx] - 1))
-        # print(hz2)
+        if T_CHNG is not None:
+            aalt = a[idx] + (a[idx]/10*t)
+            lalt = l*t-np.sin()
+            sv = np.exp(-1 * np.power((l*t), aalt)) # new
+            hz = (l*a[idx]) * np.power(l*t, aalt-1)
+        else:
+            sv = np.exp(-1 * np.power((l*t), a[idx])) # new
+            hz = (l*a[idx]) * np.power(l*t, a[idx]-1)
         sv_mat[idx,:] = sv
         hz_mat[idx,:] = hz
          
@@ -404,3 +408,9 @@ def sim_surv2(N=100,
 
     return sv_mat, hz_mat, x_mat, lmbda, a, cens, t_event, status, t
 
+
+import cloudpickle as cpkl
+def get_files(fname):
+    with open(fname, mode='rb') as file:
+        bart4 = cpkl.load(file)
+    return bart4

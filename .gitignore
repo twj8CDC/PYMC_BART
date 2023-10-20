@@ -1,7 +1,5 @@
-/mlruns
-/outputs
-/R
-/src
-/old
-*.png
+*.nc
+*.pkl
 *.csv
+mlruns/
+old/
