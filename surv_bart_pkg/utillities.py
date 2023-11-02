@@ -3,6 +3,7 @@ import numpy as np
 import scipy.stats as sp
 import sksurv as sks
 import sksurv.metrics as skm
+import sksurv.linear_model
 import surv_bart as bmb
 
 import matplotlib.pyplot as plt
@@ -122,39 +123,43 @@ def get_sv_metrics(sv, prob, y_sk, y_sk_train=None):
     bart_cindex = []
     for i in np.arange(prob.shape[1]):
         ci = skm.concordance_index_censored(y_sk["Status"], y_sk["Survival_in_days"], prob[:,i])
-        bart_cindex.append(ci)
+        bart_cindex.append(np.round(ci[0],3))
 
     
     l = np.unique(y_sk["Survival_in_days"])
     ibs = skm.integrated_brier_score(y_sk_train, y_sk, sv[:,0:-1], l[:-1])
     bs = skm.brier_score(y_sk_train, y_sk, sv[:,0:-1], l[:-1])
-    return {"cindex": bart_cindex, "bs": bs, "ibs":ibs}
+    bs = [f.tolist() for f in bs]
+    return {"cindex": bart_cindex, "bs": bs, "ibs":np.round(ibs, 4)}
 
 def quick_kpm_plot(y_sk, msk, cph_sv, sv):
+    fig, ax = plt.subplots(1)
     cov_mask = msk
     kpm_all = sks.nonparametric.kaplan_meier_estimator(y_sk["Status"], y_sk["Survival_in_days"])
     kpm_cov = sks.nonparametric.kaplan_meier_estimator(y_sk["Status"][cov_mask], y_sk["Survival_in_days"][cov_mask])
     kpm_ncov = sks.nonparametric.kaplan_meier_estimator(y_sk["Status"][~cov_mask], y_sk["Survival_in_days"][~cov_mask])
 
 
-    plt.step(kpm_cov[0], kpm_cov[1], label="kpm_cov", color="green")
-    plt.step(kpm_ncov[0], kpm_ncov[1], label="kpm_ncov", color="lightgreen")
-    plt.step(kpm_all[0], cph_sv[cov_mask].mean(0), color = "blue", label="cph_cov")
-    plt.step(kpm_all[0], cph_sv[~cov_mask].mean(0), color = "lightblue", label="cph_ncov")
-    plt.step(kpm_all[0], sv[cov_mask].mean(0), color = "red", label = "b_cov")
-    plt.step(kpm_all[0], sv[~cov_mask].mean(0), color = "pink", label= "b_ncov")
+    ax.step(kpm_cov[0], kpm_cov[1], label="kpm_cov", color="green")
+    ax.step(kpm_ncov[0], kpm_ncov[1], label="kpm_ncov", color="lightgreen")
+    ax.step(kpm_all[0], cph_sv[cov_mask].mean(0), color = "blue", label="cph_cov")
+    ax.step(kpm_all[0], cph_sv[~cov_mask].mean(0), color = "lightblue", label="cph_ncov")
+    ax.step(kpm_all[0], sv[cov_mask].mean(0), color = "red", label = "b_cov")
+    ax.step(kpm_all[0], sv[~cov_mask].mean(0), color = "pink", label= "b_ncov")
 
-    plt.legend()
+    ax.legend()
+    return fig
 
 def get_true_rmse_bias(true, pred, time_col):
     true = true[:,time_col]
     pred = pred[:, time_col]
     rmse = np.round(np.sqrt(np.mean(np.power(true - pred, 2), axis=0)), 4)
     bias = np.round(np.mean(true - pred, axis = 0), 4)
-    return {"rmse":rmse, "bias":bias, "time_col":time_col}
+    return {"rmse":rmse.tolist(), "bias":bias.tolist(), "time_col":time_col}
 
 
 def quick_kpm_true(x_mat, status, t_event, true, true_scale):
+    fig, ax = plt.subplots(1)
     # plots for comparing the true vs kpm estimates and scaled 
     cov_mask = (x_mat[:,0]==1)
     y_sk = bmb.get_y_sklearn(status, t_event)
@@ -164,23 +169,25 @@ def quick_kpm_true(x_mat, status, t_event, true, true_scale):
     kpm_ncov = sks.nonparametric.kaplan_meier_estimator(y_sk["Status"][~cov_mask], y_sk["Survival_in_days"][~cov_mask])
 
     # plot estimate from draws
-    plt.step(kpm_all[0], kpm_all[1], label="all_kpm")
-    plt.step(kpm_cov[0], kpm_cov[1], label="covid_kpm")
-    plt.step(kpm_ncov[0], kpm_ncov[1], label="ncovid_kpm")
+    ax.step(kpm_all[0], kpm_all[1], label="all_kpm")
+    ax.step(kpm_cov[0], kpm_cov[1], label="covid_kpm")
+    ax.step(kpm_ncov[0], kpm_ncov[1], label="ncovid_kpm")
     # plot true
-    plt.plot(true["t"], true["sv_true"].mean(0), label = "all_true")
-    plt.plot(true["t"], true["sv_true"][cov_mask,:].mean(0), label = "cov_true")
-    plt.plot(true["t"], true["sv_true"][~cov_mask,:].mean(0), label = "ncov_true")
+    ax.plot(true["t"], true["sv_true"].mean(0), label = "all_true")
+    ax.plot(true["t"], true["sv_true"][cov_mask,:].mean(0), label = "cov_true")
+    ax.plot(true["t"], true["sv_true"][~cov_mask,:].mean(0), label = "ncov_true")
 
-    plt.step(true_scale["t"], true_scale["sv_true"].mean(0), label = "all_scl")
-    plt.step(true_scale["t"], true_scale["sv_true"][cov_mask,:].mean(0), label = "cov_scl")
-    plt.step(true_scale["t"], true_scale["sv_true"][~cov_mask,:].mean(0), label = "ncov_scl")
+    ax.step(true_scale["t"], true_scale["sv_true"].mean(0), label = "all_scl")
+    ax.step(true_scale["t"], true_scale["sv_true"][cov_mask,:].mean(0), label = "cov_scl")
+    ax.step(true_scale["t"], true_scale["sv_true"][~cov_mask,:].mean(0), label = "ncov_scl")
 
     # plt.xlim(0,400)
-    plt.legend()
+    ax.legend()
+    return fig
 
 
 def quick_kpm_true_scale(x_mat, status, t_event, true_scale, time_scale):
+    fig, ax = plt.subplots(1)
     # plots comparing kpm estimate of scaled time compared to the true scaled time
     t_event2 = bmb.get_time_transform(t_event, time_scale=time_scale)
     y_sk = bmb.get_y_sklearn(status, t_event2)
@@ -190,12 +197,13 @@ def quick_kpm_true_scale(x_mat, status, t_event, true_scale, time_scale):
     kpm_cov = sks.nonparametric.kaplan_meier_estimator(y_sk["Status"][cov_mask], y_sk["Survival_in_days"][cov_mask])
     kpm_ncov = sks.nonparametric.kaplan_meier_estimator(y_sk["Status"][~cov_mask], y_sk["Survival_in_days"][~cov_mask])
 
-    plt.step(kpm_all[0], kpm_all[1], label="all", alpha=0.2)
-    plt.step(kpm_cov[0], kpm_cov[1], label="covid", alpha=0.2)
-    plt.step(kpm_ncov[0], kpm_ncov[1], label="ncovid", alpha=0.2)
+    ax.step(kpm_all[0], kpm_all[1], label="all", alpha=0.2)
+    ax.step(kpm_cov[0], kpm_cov[1], label="covid", alpha=0.2)
+    ax.step(kpm_ncov[0], kpm_ncov[1], label="ncovid", alpha=0.2)
 
-    plt.step(true_scale["t2"], true_scale["sv_true"].mean(0), alpha=0.2, label="all_scl")
-    plt.step(true_scale["t2"], true_scale["sv_true"][cov_mask,:].mean(0), alpha=0.2, label = "cov_scl")
-    plt.step(true_scale["t2"], true_scale["sv_true"][~cov_mask,:].mean(0), alpha=0.2, label = "ncov_scl")
-    plt.title("KPM Estimate of scaled times w/ True scaled")
-    plt.legend()
+    ax.step(true_scale["t2"], true_scale["sv_true"].mean(0), alpha=0.2, label="all_scl")
+    ax.step(true_scale["t2"], true_scale["sv_true"][cov_mask,:].mean(0), alpha=0.2, label = "cov_scl")
+    ax.step(true_scale["t2"], true_scale["sv_true"][~cov_mask,:].mean(0), alpha=0.2, label = "ncov_scl")
+    ax.set_title("KPM Estimate of scaled times w/ True scaled")
+    ax.legend()
+    return fig

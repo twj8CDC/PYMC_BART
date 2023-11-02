@@ -427,6 +427,7 @@ def get_survival(post, axis=1, mean=True, values=True):
     return sv
 
 
+
 def get_prob(post):
     if "Dataset" in str(type(post)):
         post = post["mu"]    
