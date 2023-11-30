@@ -131,6 +131,10 @@ CHAINS = int(CHAINS)
 
 # COMMAND ----------
 
+print(CHAINS, CORES, TUNE, DRAWS)
+
+# COMMAND ----------
+
 import sys
 sys.exit(0)
 
