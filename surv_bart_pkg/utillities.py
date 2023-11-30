@@ -5,13 +5,13 @@ import scipy.stats as sp
 import sksurv as sks
 import sksurv.metrics as skm
 import sksurv.linear_model
-<<<<<<< Updated upstream
+
 # import surv_bart as bmb
-=======
+
 # import surv_bart as bmb
 from surv_bart_pkg import surv_bart as bmb
 
->>>>>>> Stashed changes
+
 
 import matplotlib.pyplot as plt
 
@@ -208,13 +208,13 @@ def quick_kpm_true_scale(x_mat, status, t_event, true_scale, time_scale):
     ax.step(kpm_cov[0], kpm_cov[1], label="covid", alpha=0.2)
     ax.step(kpm_ncov[0], kpm_ncov[1], label="ncovid", alpha=0.2)
 
-<<<<<<< Updated upstream
+
     ax.step(true_scale["t2"], true_scale["sv_true"].mean(0), alpha=0.2, label="all_scl")
     ax.step(true_scale["t2"], true_scale["sv_true"][cov_mask,:].mean(0), alpha=0.2, label = "cov_scl")
     ax.step(true_scale["t2"], true_scale["sv_true"][~cov_mask,:].mean(0), alpha=0.2, label = "ncov_scl")
     ax.set_title("KPM Estimate of scaled times w/ True scaled")
     ax.legend()
-=======
+
     plt.step(true_scale["t2"], true_scale["sv_true"].mean(0), alpha=0.2, label="all_scl")
     plt.step(true_scale["t2"], true_scale["sv_true"][cov_mask,:].mean(0), alpha=0.2, label = "cov_scl")
     plt.step(true_scale["t2"], true_scale["sv_true"][~cov_mask,:].mean(0), alpha=0.2, label = "ncov_scl")
@@ -295,5 +295,4 @@ def plot_calib_diff(trn_calib):
     axs[1,0].legend()
     axs[1,1].plot(trn_calib["diff"][3].T, "o", label=np.round(trn_calib["qt"][3], 2))
     axs[1,1].legend()
->>>>>>> Stashed changes
     return fig
