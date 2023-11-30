@@ -37,8 +37,8 @@ np_seed = int(np.ceil(time.time()))
 # COMMAND ----------
 
 # GLOBALS
-CODE = "NVS"
-RUN_NAME = f"{CODE}_run_01"
+CODE = "EAR"
+RUN_NAME = f"{CODE}_run_02"
 EXP_ID = 502851330942627
 TIME_SCALE = 91.5
 BALANCE = True

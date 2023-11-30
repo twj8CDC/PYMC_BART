@@ -263,6 +263,11 @@ def calib_metric_internal(sv, y_sk_coh, t, q = np.arange(0,1,.1)):
         kp = sks.nonparametric.kaplan_meier_estimator(obs2["Status"], obs2["Survival_in_days"])
         obs = np.round(kp[1],3)
         pred = np.round(sv[tmp].mean(0),3)
+        # fix uneven obs pred len
+        if len(obs) != len(pred):
+            sdf = np.setdiff1d([1,2,3,4],kp[0])
+            print(f"adjusting at time {sdf}")
+            obs = np.insert(obs, sdf, pred[sdf])
         diff = np.round(obs-pred,3)
         obs_out[idx,:] = obs
         pred_out[idx,:] = pred
