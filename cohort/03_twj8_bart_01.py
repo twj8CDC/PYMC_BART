@@ -121,7 +121,7 @@ if TREES1 != "na":
 
 dbutils.widgets.text("split_rules", defaultValue=str(SPLIT_RULES))
 SPLIT_RULES1 = dbutils.widgets.get("split_rules")
-if SPLIT_RULES1 != "na"
+if SPLIT_RULES1 != "na":
     SPLIT_RULES =  eval(SPLIT_RULES1)
 
 dbutils.widgets.text("draws", defaultValue=str(DRAWS))
