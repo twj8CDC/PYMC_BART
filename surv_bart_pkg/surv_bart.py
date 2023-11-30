@@ -14,6 +14,10 @@ import warnings
 import pytensor.tensor as pt
 from pymc_bart.utils import _sample_posterior
 import cloudpickle as cpkl
+import pyspark.sql.functions as F
+import pyspark.sql.window as W
+import sksurv as sks
+from sksurv import nonparametric
 
 from numpy.random import RandomState
 RANDOM_SEED = 8927
@@ -36,6 +40,7 @@ class BartSurvModel(ModelBuilder):
         self._generate_and_preprocess_model_data(X, y, weights, predictor_names)
         # Get model Configs
         SPLIT_RULES = [eval(rule) for rule in self.model_config.get("split_rules", None)]
+        SPLIT_PRIOR = self.model_config.get("split_prior")
         M = self.model_config.get("trees", 20)
 
         # custom logp
@@ -60,7 +65,7 @@ class BartSurvModel(ModelBuilder):
             x_data = pm.MutableData("x_data", self.X, dims=("p_obs", "xvars"))
             w = pm.MutableData("weights", self.weights)
             # change names of y_values
-            f = pmb.BART("f", X=x_data, Y=self.y.flatten(), m=M, split_rules = SPLIT_RULES)
+            f = pmb.BART("f", X=x_data, Y=self.y.flatten(), m=M, split_rules = SPLIT_RULES, split_prior = SPLIT_PRIOR)
             z = pm.Deterministic("z", (f + self.offset))
             mu = pm.Deterministic("mu", pm.math.invprobit(z), dims=("p_obs"))
             pm.CustomDist("y_pred", mu, w.flatten(), dist=dist_bern, logp=logp_bern, observed=self.y.flatten(), shape = x_data.shape[0])            
@@ -472,13 +477,191 @@ def get_pdp(x_sk, var_col, values=[], qt=[0.25,0.5,0.75], sample_n=None):
 
     return out_sk, c_idx
 
-# def eval_pdp(model, pdp_x, pdp_coords):
-#     pdp_post = model.bart_predict(pdp_x, pdp_coords)
-#     sv = get_survival(pdp_post)
-#     prob = get_prob(pdp_post)
+#####################################################################
+# New functions
+######################################################################
+# get the dataset for specific code
+def get_sk_sp(df, cov, code):
+    df_code = df.filter(F.col("code_sm") == code)
+    mg = (
+        df_code
+        .join(cov, on="medrec_key", how="left")
+        .drop("medrec_key", "code_sm")
+        .withColumn("ccsr_tt_p3", F.col("ccsr_tt_p3")-30) # adjust date by -30
+    )
+    names = mg.columns
+    out = [[x[i] for i in range(len(names))] for x in mg.collect() ]
+    # out = [[x[0], x[1], x[2]] for x in mg]
+    return np.array(out, dtype="int"), names
 
+def get_coh(y_sk, cc1, sample_n = 10_000, balance=True, train=True, idx=None, seed = 0, resample=False, prop=1):
+    # set the seed
+    if not resample:
+        np.random.seed(seed)
+    # cohort set-up
+    y_sk_coh, x_sk_coh, w_coh = get_case_cohort(y_sk, cc1[:,2:], prop = prop)
+    # downsample
+    if train:
+        print("getting train")
+        if balance:
+            sample_n = int(np.ceil(sample_n/2))
+            print(f"getting {sample_n} * 2 samples (balanced)")
+            cov_idx = np.where(x_sk_coh[:,5] == 1)[0]
+            ncov_idx = np.where(x_sk_coh[:,5] != 1)[0]
+            cov_smp = np.random.choice(cov_idx, sample_n, replace=False)
+            ncov_smp = np.random.choice(ncov_idx, sample_n, replace=False)
+            cov_idx_test = np.setdiff1d(cov_idx, cov_smp) # drop the samples from the all dataset
+            ncov_idx_test = np.setdiff1d(ncov_idx, ncov_smp)
+            idx_out = {
+                "cov_idx": cov_idx,
+                "ncov_idx": ncov_idx,
+                "cov_smp": cov_smp,
+                "ncov_smp": ncov_smp,
+                "sample_idx": np.concatenate([cov_smp, ncov_smp]),
+                "cov_idx_test": cov_idx_test, 
+                "ncov_idx_test": ncov_idx_test
+            }
+            samp_idx = np.concatenate([cov_smp, ncov_smp])
+        else:
+            print(f"getting {sample_n} samples (straight)")
+            idx = np.arange(y_sk.shape[0])
+            samp_idx = np.random.choice(idx, size=sample_n, replace=False)
+            all_idx_test = np.setdiff1d(idx, samp_idx) # drop the sample from the all
+            idx_out = {
+                "sample_idx": samp_idx,
+                "all_idx_test": all_idx_test
+                } 
+        # final cohort
+        y_sk_coh_2 =y_sk_coh[samp_idx]
+        x_sk_coh_2 = x_sk_coh[samp_idx]
+        w_coh_2 = w_coh[samp_idx]
+        out_msk = x_sk_coh_2[:,5]==1
+        coh_y, coh_x, coh_w, coh_coords = surv_pre_train(y_sk_coh_2, x_sk_coh_2, w_coh_2)
+        x_tst, tst_coords = get_posterior_test(np.unique(y_sk_coh_2["Survival_in_days"]), x_sk_coh_2)
+        return {
+            "y_sk_coh": y_sk_coh_2,
+            "x_sk_coh": x_sk_coh_2,
+            "w_sk_coh": w_coh_2,
+            "coh_y": coh_y, 
+            "coh_x": coh_x, 
+            "coh_w": coh_w, 
+            "coh_coords": coh_coords, 
+            "x_tst": x_tst, 
+            "tst_coords": tst_coords,
+            "msk": out_msk,
+            "idx": idx_out,
+            "seed": seed
+        } 
+    else:
+        print("getting test")
+        if idx is None: # check to see that we have the idx to remove train sample
+            print("Provide a idx of sample set to drop from test set")
+        else:
+            if balance:
+                print("getting a balance sample")
+                sample_n = int(np.ceil(sample_n/2))
+                if "cov_idx_test" not in idx.keys():
+                    print("requires the train to be balanced, returns none")
+                    return
+                else:   
+                    cov_idx = np.random.choice(idx["cov_idx_test"], sample_n, replace=False)
+                    ncov_idx = np.random.choice(idx["ncov_idx_test"], sample_n, replace=False)
+                    samp_idx = np.concatenate([cov_idx, ncov_idx])
+            else:
+                print("getting a straight sample")
+                if "all_idx_test" not in idx.keys():
+                    idx_all = np.concatenate([idx["cov_idx"], idx["ncov_idx"]])
+                else:
+                    idx_all = idx["all_idx_test"]
+                samp_idx = np.random.choice(idx_all, sample_n, replace=False)
+            y_sk_coh_2 =y_sk_coh[samp_idx]
+            x_sk_coh_2 = x_sk_coh[samp_idx]
+            w_coh_2 = w_coh[samp_idx]
+            # finish setup
+            x_tst, tst_coords = get_posterior_test(np.unique(y_sk_coh_2["Survival_in_days"]), x_sk_coh_2)
+            out_msk = x_sk_coh_2[:,5]==1
+            return {
+                "y_sk_coh": y_sk_coh_2,
+                "x_sk_coh": x_sk_coh_2,
+                "w_sk_coh": w_coh_2,
+                # "y_test": y_sk_coh, 
+                # "x_test": x_sk_coh,
+                # "w_test": w_coh,
+                "x_tst_test": x_tst, 
+                "x_tst_coords_test": tst_coords,
+                "msk_test": out_msk,
+                "idx_test": samp_idx,
+                "seed_test": seed 
+            }
 
-#     pred0 = sv[pdp_idx["coord"]==0]
-#     pred1 = sv[pdp_idx["coord"]==1]
-#     pdm = (pred1-pred0).mean(0)
-#     pdq = pdm - np.quantile((pred1-pred0), [0.025, 0.975], axis=0)
+def get_sv_prob(post):
+    n,k = np.unique(post.p_obs.values, return_counts=True)
+    prob = post.mu.values.reshape(-1, n.shape[0], k[0])
+    sv = np.cumprod(1-prob, 2)
+    return {
+        "prob":prob, 
+        "sv":sv
+        }
+
+def get_sv_mean_quant(sv, msk, draws = True):
+    # binary mask means and quantiles
+    #tmask
+    sv_mt = sv[:,msk,:]
+    sv_mt_m = sv_mt.mean(axis=1) # mean per draw
+    if draws:
+        sv_mt_q = np.quantile(sv_mt_m, [0.025, 0.975], axis = 0)
+        sv_mt_m = sv_mt_m.mean(axis=0) # mean over draws
+
+    #fmask
+    sv_mf = sv[:,~msk,:]
+    sv_mf_m = sv_mf.mean(axis=1)
+    if draws:
+        sv_mf_q = np.quantile(sv_mf_m, [0.025, 0.975], axis = 0)
+        sv_mf_m = sv_mf_m.mean(axis=0)
+
+    return {
+        "mt_m":sv_mt_m, 
+        "mt_q":sv_mt_q, 
+        "mf_m":sv_mf_m, 
+        "mf_q":sv_mf_q
+    }
+
+# get diff metric 
+def pdp_diff_metric(pdp_val, idx):
+    diff = (pdp_val["sv"][:,:idx,:] - pdp_val["sv"][:,idx:,:]).mean(1) #cov - ncov
+    d_m = diff.mean(0)
+    d_q = np.quantile(diff, [0.025, 0.975], axis=0)
+    return {"diff_m": np.round(d_m,3),
+             "diff_q": np.round(d_q,3)}
+
+def pdp_rr_metric(pdp_val, idx):
+    r = (pdp_val["prob"][:,idx:,:] / pdp_val["prob"][:,:idx,:]).mean(1) #cov/ncov
+    r_m = r.mean(0)
+    r_q = np.quantile(r, [0.025, 0.975], axis=0)
+    return {"rr_m": np.round(r_m,3), 
+            "rr_q":np.round(r_q,3)}
+    
+def pdp_eval(x_sk_coh, bart_model, var_col, values, var_name=None, sample_n=None, uniq_times=None, diff=True, rr = True, return_all=False):
+    # set up dataset
+    pdp = get_pdp(x_sk_coh, var_col = var_col, values = values, sample_n=sample_n) 
+    # get longform
+    pdp_x, pdp_coords = get_posterior_test(uniq_times, pdp[0])
+    # get posterior draws
+    pdp_post = bart_model.sample_posterior_predictive(pdp_x, pdp_coords, extend_idata=False)
+    # get sv_val
+    pdp_val = get_sv_prob(pdp_post)
+    # get mean and quantile
+    pdp_mq = get_sv_mean_quant(pdp_val["sv"],pdp[1]["coord"]==1)
+
+    # get diff and rr
+    pdp_diff = None
+    pdp_rr = None
+    if diff:
+        pdp_diff = pdp_diff_metric(pdp_val, pdp[1]["cnt"][0])
+    if rr:
+        pdp_rr = pdp_rr_metric(pdp_val, pdp[1]["cnt"][0])   
+
+    if return_all:
+        return {"pdp_varname":var_name, "pdp_x":pdp_x, "pdp_coords":pdp_coords, "pdp_post":pdp_post, "pdp_val":pdp_val, "pdp_mq":pdp_mq, "pdp_diff":pdp_diff, "pdp_rr":pdp_rr}
+    else:
+        return {"pdp_varname":var_name, "pdp_val":pdp_val, "pdp_mq":pdp_mq, "pdp_diff":pdp_diff, "pdp_rr":pdp_rr}
