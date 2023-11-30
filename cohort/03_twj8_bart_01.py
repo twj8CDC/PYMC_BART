@@ -194,7 +194,7 @@ model_dict_main = {
 ml.log_dict(global_dict, f"{CODE}_global_dict.json")
 ml.log_dict(model_dict_main, f"{CODE}_model_dict.json")
 print(global_dict)
-print(model_dict)
+print(model_dict_main)
 
 # COMMAND ----------
 
