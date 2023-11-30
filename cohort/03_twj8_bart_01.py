@@ -127,7 +127,7 @@ if SPLIT_RULES1 != "na":
 dbutils.widgets.text("draws", defaultValue=str(DRAWS))
 DRAWS1 = dbutils.widgets.get("draws")
 if DRAWS1 != "na":
-    DRAWS = int(DRAWS)
+    DRAWS = int(DRAWS1)
 
 dbutils.widgets.text("tune", defaultValue=str(TUNE))
 TUNE1 = dbutils.widgets.get("tune")
@@ -207,27 +207,15 @@ print(model_dict_main)
 # Load ccsr 
 ccsr_s = spark.table("cdh_premier_exploratory.twj8_pat_ccsr_short_f_06")
 cov = spark.table("cdh_premier_exploratory.twj8_pat_covariates_f_07")
-# codes = [x[0] for x in ccsr_s.select("code_sm").distinct().collect()]
-# print(codes)
+
 
 # Get the datasets data
 cc1, cc_name = bmb.get_sk_sp(ccsr_s, cov, CODE)
 
 # COMMAND ----------
 
-# get the dataset for specific code
-# def get_sk_sp(df, cov, code):
-#     df_code = df.filter(F.col("code_sm") == code)
-#     mg = (
-#         df_code
-#         .join(cov, on="medrec_key", how="left")
-#         .drop("medrec_key", "code_sm")
-#         .withColumn("ccsr_tt_p3", F.col("ccsr_tt_p3")-30) # adjust date by -30
-#     )
-#     names = mg.columns
-#     out = [[x[i] for i in range(len(names))] for x in mg.collect() ]
-#     # out = [[x[0], x[1], x[2]] for x in mg]
-#     return np.array(out, dtype="int"), names
+# codes = [x[0] for x in ccsr_s.select("code_sm").distinct().collect()]
+# print(codes)
 
 # COMMAND ----------
 
