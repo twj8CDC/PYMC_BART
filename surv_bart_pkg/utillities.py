@@ -265,9 +265,11 @@ def calib_metric_internal(sv, y_sk_coh, t, q = np.arange(0,1,.1)):
         pred = np.round(sv[tmp].mean(0),3)
         # fix uneven obs pred len
         if len(obs) != len(pred):
+            print(kp[0])
             sdf = np.setdiff1d([1,2,3,4],kp[0])
             print(f"adjusting at time {sdf}")
             obs = np.insert(obs, sdf, pred[sdf])
+            print(obs)
         diff = np.round(obs-pred,3)
         obs_out[idx,:] = obs
         pred_out[idx,:] = pred
