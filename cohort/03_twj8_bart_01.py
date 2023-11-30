@@ -102,7 +102,7 @@ if TIME_SCALE1 != "na":
 dbutils.widgets.text("balance", defaultValue=str(BALANCE))
 BALANCE1 = dbutils.widgets.get("balance")
 if BALANCE1 != "na":
-    BALANCE = bool(BALANCE1)
+    BALANCE = eval(BALANCE1)
 
 dbutils.widgets.text("sample_trn", defaultValue=str(SAMPLE_TRN))
 SAMPLE_TRN1 = dbutils.widgets.get("sample_trn")
