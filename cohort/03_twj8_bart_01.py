@@ -74,13 +74,17 @@ CHAINS = 8
 
 # COMMAND ----------
 
-dbutils.widgets.text("code", defaultValue=CODE)
+dbutils.widgets.text("seed", defaultValue = str(np_seed))
+np_seed = dbutils.widgets.get("seed")
+np_seed = int(np_seed)
+
+dbutils.widgets.text("code", defaultValue=str(CODE))
 CODE = dbutils.widgets.get("code")
 
-dbutils.widgets.text("run_name", defaultValue=RUN_NAME)
+dbutils.widgets.text("run_name", defaultValue=str(RUN_NAME))
 RUN_NAME = dbutils.widgets.get("run_name")
 
-dbutils.widgets.text("exp_id", defaultValue=EXP_ID)
+dbutils.widgets.text("exp_id", defaultValue=str(EXP_ID))
 EXP_ID = dbutils.widgets.get("exp_id")
 EXP_ID = int(EXP_ID)
 
