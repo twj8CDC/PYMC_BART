@@ -517,6 +517,23 @@ tst_cov_pdp = bmb.pdp_eval(
 
 # COMMAND ----------
 
+tst_cov_pdp
+fig = ut.sv_plot(
+    sv= tst_cov_pdp["pdp_mq"], 
+    y_sk_coh = tst["y_sk_coh"], 
+    msk=tst["msk_test"], 
+    y_sk=y_sk, 
+    cc1=cc1, 
+    strat=True, 
+    cred_int=True, 
+    kpm_all=False, 
+    kpm_sample=False,
+    whr = "mid"
+)
+ml.log_figure(fig, f"{CODE}_pdp_sv_plot.png")
+
+# COMMAND ----------
+
 out = {}
 for n,s in [("trn_rr",trn_cov_pdp["pdp_rr"]), ("tst_rr",tst_cov_pdp["pdp_rr"]), ("trn_diff",trn_cov_pdp["pdp_diff"]), ("tst_diff",tst_cov_pdp["pdp_diff"])]:
     tmp = {}
