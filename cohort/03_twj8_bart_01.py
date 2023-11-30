@@ -146,7 +146,7 @@ if CHAINS1 != "na":
 
 # COMMAND ----------
 
-print(CHAINS, CORES, TUNE, DRAWS)
+print(CHAINS, CORES, TUNE, DRAWS, SPLIT_RULES)
 
 # COMMAND ----------
 
