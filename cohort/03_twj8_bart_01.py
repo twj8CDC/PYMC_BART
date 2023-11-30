@@ -75,59 +75,74 @@ CHAINS = 8
 # COMMAND ----------
 
 dbutils.widgets.text("seed", defaultValue = str(np_seed))
-np_seed = dbutils.widgets.get("seed")
-np_seed = int(np_seed)
+np_seed1 = dbutils.widgets.get("seed")
+if np_seed1 != "na":
+    np_seed = int(np_seed)
 
 dbutils.widgets.text("code", defaultValue=str(CODE))
-CODE = dbutils.widgets.get("code")
+CODE1 = dbutils.widgets.get("code")
+if CODE1 != "na":
+    CODE = CODE1
 
 dbutils.widgets.text("run_name", defaultValue=str(RUN_NAME))
-RUN_NAME = dbutils.widgets.get("run_name")
+RUN_NAME1 = dbutils.widgets.get("run_name")
+if RUN_NAME1 != "na":
+    RUN_NAME = RUN_NAME1
 
 dbutils.widgets.text("exp_id", defaultValue=str(EXP_ID))
-EXP_ID = dbutils.widgets.get("exp_id")
-EXP_ID = int(EXP_ID)
+EXP_ID1 = dbutils.widgets.get("exp_id")
+if EXP_ID1 != "na":
+    EXP_ID = int(EXP_ID1)
 
 dbutils.widgets.text("time_scale", defaultValue=str(TIME_SCALE))
-TIME_SCALE = dbutils.widgets.get("time_scale")
-TIME_SCALE = float(TIME_SCALE)
+TIME_SCALE1 = dbutils.widgets.get("time_scale")
+if TIME_SCALE1 != "na":
+    TIME_SCALE = float(TIME_SCALE1)
 
 dbutils.widgets.text("balance", defaultValue=str(BALANCE))
-BALANCE = dbutils.widgets.get("balance")
-BALANCE = bool(BALANCE)
+BALANCE1 = dbutils.widgets.get("balance")
+if BALANCE1 != "na":
+    BALANCE = bool(BALANCE1)
 
 dbutils.widgets.text("sample_trn", defaultValue=str(SAMPLE_TRN))
-SAMPLE_TRN = dbutils.widgets.get("sample_trn")
-SAMPLE_TRN = int(SAMPLE_TRN)
+SAMPLE_TRN1 = dbutils.widgets.get("sample_trn")
+if SAMPLE_TRN1 != "na":
+    SAMPLE_TRN = int(SAMPLE_TRN1)
 
 dbutils.widgets.text("sample_tst", defaultValue=str(SAMPLE_TST))
-SAMPLE_TST = dbutils.widgets.get("sample_tst")
-SAMPLE_TST = int(SAMPLE_TST)
+SAMPLE_TST1 = dbutils.widgets.get("sample_tst")
+if SAMPLE_TST1 != "na":
+    SAMPLE_TST = int(SAMPLE_TST1)
 
 dbutils.widgets.text("trees", defaultValue=str(TREES))
-TREES = dbutils.widgets.get("trees")
-TREES = int(TREES)
+TREES1 = dbutils.widgets.get("trees")
+if TREES1 != "na":
+    TREES = int(TREES)
 
 dbutils.widgets.text("split_rules", defaultValue=str(SPLIT_RULES))
-SPLIT_RULES = dbutils.widgets.get("split_rules")
-SPLIT_RULES =  eval(SPLIT_RULES)
+SPLIT_RULES1 = dbutils.widgets.get("split_rules")
+if SPLIT_RULES1 != "na"
+    SPLIT_RULES =  eval(SPLIT_RULES1)
 
 dbutils.widgets.text("draws", defaultValue=str(DRAWS))
-DRAWS = dbutils.widgets.get("draws")
-DRAWS = int(DRAWS)
+DRAWS1 = dbutils.widgets.get("draws")
+if DRAWS1 != "na":
+    DRAWS = int(DRAWS)
 
 dbutils.widgets.text("tune", defaultValue=str(TUNE))
-TUNE = dbutils.widgets.get("tune")
-TUNE = int(TUNE)
+TUNE1 = dbutils.widgets.get("tune")
+if TUNE1 != "na":
+    TUNE = int(TUNE1)
 
 dbutils.widgets.text("cores", defaultValue=str(CORES))
-CORES = dbutils.widgets.get("cores")
-CORES = int(CORES)
+CORES1 = dbutils.widgets.get("cores")
+if CORES1 != "na":
+    CORES = int(CORES1)
 
 dbutils.widgets.text("chains", defaultValue=str(CHAINS))
-CHAINS = dbutils.widgets.get("chains")
-CHAINS = int(CHAINS)
-
+CHAINS1 = dbutils.widgets.get("chains")
+if CHAINS1 != "na":
+    CHAINS = int(CHAINS1)
 
 # COMMAND ----------
 
