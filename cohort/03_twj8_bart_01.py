@@ -117,7 +117,7 @@ if SAMPLE_TST1 != "na":
 dbutils.widgets.text("trees", defaultValue=str(TREES))
 TREES1 = dbutils.widgets.get("trees")
 if TREES1 != "na":
-    TREES = int(TREES)
+    TREES = int(TREES1)
 
 dbutils.widgets.text("split_rules", defaultValue=str(SPLIT_RULES))
 SPLIT_RULES1 = dbutils.widgets.get("split_rules")
