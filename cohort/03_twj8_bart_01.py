@@ -25,7 +25,7 @@ import mlflow as ml
 import lifelines as ll
 import time
 
-importlib.reload(bmb)
+# importlib.reload(bmb)
 # Set Seed
 np_seed = int(np.ceil(time.time()))
 
@@ -45,7 +45,7 @@ BALANCE = True
 SAMPLE_TRN = 10_000
 SAMPLE_TST = 20_000
 
-TREES = 40
+TREES = 30
 SPLIT_RULES =  [
     "pmb.ContinuousSplitRule()", # time
     "pmb.OneHotSplitRule", # ccsr_ind_p2
@@ -64,8 +64,8 @@ SPLIT_RULES =  [
     "pmb.OneHotSplitRule()", #hispanic_ind
     "pmb.OneHotSplitRule()" # i_o_ind
     ]
-DRAWS = 100
-TUNE = 200
+DRAWS = 300
+TUNE = 300
 CORES = 8
 CHAINS = 8
 
@@ -300,11 +300,13 @@ ml.log_dict(dict([(k, trn_mq[k].tolist()) for k in trn_mq.keys()]), f"{CODE}_trn
 
 # COMMAND ----------
 
+title = f"{CODE}_trn_sv_prob.png"
 fig = ut.sv_plot(
     sv= trn_mq, 
     y_sk_coh = trn["y_sk_coh"], 
     msk=trn["msk"], 
-    y_sk=y_sk, 
+    y_sk=y_sk,
+    title =title, 
     cc1=cc1, 
     strat=True, 
     cred_int=True, 
@@ -312,7 +314,7 @@ fig = ut.sv_plot(
     kpm_sample=True,
     whr = "mid"
 )
-ml.log_figure(fig, f"{CODE}_trn_sv_prob.png")
+ml.log_figure(fig, title)
 
 # COMMAND ----------
 
@@ -353,10 +355,26 @@ cbsibs_dict
 
 # COMMAND ----------
 
-trn_calib = ut.calib_metric(trn_val["sv"], trn["y_sk_coh"], q = np.arange(0,1,0.1))
+title = f"{CODE}_trn_sv_calib_diff_time_rnk.png"
+trn_calib = ut.calib_metric(
+    trn_val["sv"], 
+    trn["y_sk_coh"], 
+    q = np.arange(0,1,0.1)
+    )
 fig = ut.plot_calib_diff(trn_calib)
+ml.log_figure(fig, title)
 
-ml.log_figure(fig, f"{CODE}_trn_sv_calib_diff_time_rnk.png")
+# COMMAND ----------
+
+cb = ut.calib_metric_bart(
+    trn_val["sv"], 
+    trn["y_sk_coh"], 
+    t=4, q = np.arange(0,1,0.1), 
+    single_time=True
+)
+title = f"{CODE}_trn_sv_calib_plot.png"
+fig = ut.plot_calib_prob(cb, title)
+ml.log_figure(fig, title)
 
 # COMMAND ----------
 
@@ -385,19 +403,21 @@ ml.log_dict(dict([(k, tst_mq[k].tolist()) for k in tst_mq.keys()]), f"{CODE}_tst
 
 # COMMAND ----------
 
+title = f"{CODE}_tst_sv_prob.png"
 fig = ut.sv_plot(
     sv= tst_mq, 
     y_sk_coh = tst["y_sk_coh"], 
     msk=tst["msk_test"], 
     y_sk=y_sk, 
     cc1=cc1, 
+    title = title,
     strat=True, 
     cred_int=True, 
     kpm_all=True, 
     kpm_sample=True,
     whr = "mid"
 )
-ml.log_figure(fig, f"{CODE}_tst_sv_prob.png")
+ml.log_figure(fig, title)
 
 
 
@@ -446,6 +466,19 @@ ml.log_figure(fig, f"{CODE}_tst_sv_calib_diff_time_rnk.png")
 
 # COMMAND ----------
 
+cb = ut.calib_metric_bart(
+    tst_val["sv"], 
+    tst["y_sk_coh"], 
+    t=4, q = np.arange(0,1,0.1), 
+    single_time=True
+)
+
+title = f"{CODE}_tst_sv_calib_plot.png"
+fig = ut.plot_calib_prob(cb, title)
+ml.log_figure(fig, title)
+
+# COMMAND ----------
+
 diff_dict = {}
 for idx,i in enumerate(tst_calib["diff"].mean(0)):
     diff_dict[f"p_{idx+1}"] = np.round(i,3).tolist()
@@ -470,6 +503,10 @@ var_dict = tuple(zip(vname,
     )
 
 ml.log_dict({"var_rank":var_dict}, f"{CODE}_naive_var_ranks.json")
+
+# COMMAND ----------
+
+var_dict
 
 # COMMAND ----------
 
@@ -505,12 +542,13 @@ tst_cov_pdp = bmb.pdp_eval(
 
 # COMMAND ----------
 
-tst_cov_pdp
+title = f"{CODE}_pdp_sv_plot.png"
 fig = ut.sv_plot(
     sv= tst_cov_pdp["pdp_mq"], 
     y_sk_coh = tst["y_sk_coh"], 
     msk=tst["msk_test"], 
     y_sk=y_sk, 
+    title = title,
     cc1=cc1, 
     strat=True, 
     cred_int=True, 
@@ -518,7 +556,7 @@ fig = ut.sv_plot(
     kpm_sample=False,
     whr = "mid"
 )
-ml.log_figure(fig, f"{CODE}_pdp_sv_plot.png")
+ml.log_figure(fig, title)
 
 # COMMAND ----------
 
@@ -586,6 +624,15 @@ tmp = pd.get_dummies(pd.DataFrame(tmp, columns=cc_name), columns=["pat_type", "s
 
 # COMMAND ----------
 
+tst["idx_test"].shape
+
+# COMMAND ----------
+
+tmp_tst = cc1[tst["idx_test"]]
+tmp_tst = pd.get_dummies(pd.DataFrame(tmp_tst, columns=cc_name), columns=["pat_type", "std_payor", "ms_drg", "race", "hispanic_ind", "i_o_ind"], drop_first=True, dtype="int")
+
+# COMMAND ----------
+
 cph = ll.CoxPHFitter(penalizer=0.0001)
 c = cph.fit(
     tmp,
@@ -594,6 +641,36 @@ c = cph.fit(
     fit_options = {"step_size":0.1}
     )
 # c.print_summary()
+
+# COMMAND ----------
+
+importlib.reload(ut)
+
+# COMMAND ----------
+
+cph_sv = c.predict_survival_function(tmp, 365).T.to_numpy().squeeze()
+tmp_sky = bmb.get_y_sklearn(tmp["ccsr_ind_p3"], tmp["ccsr_tt_p3"])
+cb2 = ut.calib_metric_cph(cph_sv, 
+                               tmp_sky, 
+                               t=4, 
+                               q = np.arange(0,1,0.1), 
+                               single_time=True)
+title =f"{CODE}_trn_cph_sv_calib_plot.png"
+fig = ut.plot_calib_prob(cb2, title)
+ml.log_figure(fig, title)
+
+# COMMAND ----------
+
+cph_sv = c.predict_survival_function(tmp_tst, 365).T.to_numpy().squeeze()
+tmp_sk_y = bmb.get_y_sklearn(tmp_tst["ccsr_ind_p3"], tmp_tst["ccsr_tt_p3"])
+cb2 = ut.calib_metric_cph(cph_sv, 
+                               tmp_sk_y, 
+                               t=4, 
+                               q = np.arange(0,1,0.1), 
+                               single_time=True)
+title =f"{CODE}_tst_cph_sv_calib_plot.png"
+fig = ut.plot_calib_prob(cb2, title)
+ml.log_figure(fig, title)
 
 # COMMAND ----------
 

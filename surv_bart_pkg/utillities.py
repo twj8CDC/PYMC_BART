@@ -221,7 +221,7 @@ def quick_kpm_true_scale(x_mat, status, t_event, true_scale, time_scale):
     plt.title("KPM Estimate of scaled times w/ True scaled")
     plt.legend()
 
-def sv_plot(sv, y_sk_coh, msk, y_sk, cc1, strat=True, cred_int=True, kpm_all=True, kpm_sample=True, whr = "mid"):
+def sv_plot(sv, y_sk_coh, msk, y_sk, cc1, title = "SV Plot", strat=True, cred_int=True, kpm_all=True, kpm_sample=True, whr = "mid"):
     t = np.arange(1,sv["mt_m"].shape[0]+1)
     fig, ax = plt.subplots(figsize=(8,8))
     ax.step(t, sv["mt_m"], label="covid", where=whr)
@@ -243,7 +243,10 @@ def sv_plot(sv, y_sk_coh, msk, y_sk, cc1, strat=True, cred_int=True, kpm_all=Tru
         ax.step(km_ncov_all[0], km_ncov_all[1], label="km_ncov_all", where=whr)
         # ax.fill_between(km_ncov_all[0], km_ncov_all[2][0], km_ncov_all[2][1], step="pre", alpha=0.1)
     ax.legend()
-    ax.set_xticks([1,2,3,4])
+    ax.set_xticks(t)
+    ax.set_title(title)
+    ax.set_xlabel("Times")
+    ax.set_ylabel("SV Probability")
     return fig
 
 def calib_metric_internal(sv, y_sk_coh, t, q = np.arange(0,1,.1)):
@@ -265,11 +268,19 @@ def calib_metric_internal(sv, y_sk_coh, t, q = np.arange(0,1,.1)):
         pred = np.round(sv[tmp].mean(0),3)
         # fix uneven obs pred len
         if len(obs) != len(pred):
-            print(kp[0])
-            sdf = np.setdiff1d([1,2,3,4],kp[0])
-            print(f"adjusting at time {sdf}")
-            obs = np.insert(obs, sdf, pred[sdf])
-            print(obs)
+            # print(kp[0])
+            # sdf = np.setdiff1d([1,2,3,4],kp[0])
+            # print(f"adjusting at time {sdf}")
+            # obs = np.insert(obs, sdf, pred[sdf])
+            # print(obs)
+            adj = pred
+            idx_tmp =np.array(kp[0], dtype="int")
+            adj[idx_tmp-1] = kp[1]
+            shape_tmp = np.arange(pred.shape[0])
+            sdf = np.setdiff1d(shape_tmp+1,kp[0])
+            adj[sdf-1] = np.NAN
+            print(f"set to NAN for time non exist {adj}")
+            obs = adj
         diff = np.round(obs-pred,3)
         obs_out[idx,:] = obs
         pred_out[idx,:] = pred
@@ -296,10 +307,140 @@ def plot_calib_diff(trn_calib):
     fig, axs = plt.subplots(2,2, figsize=(10,10))
     axs[0,0].plot(trn_calib["diff"][0].T, "o", label=np.round(trn_calib["qt"][0], 2))
     axs[0,0].legend()
+    axs[0,0].set_title("Pred Time 1 group")
     axs[0,1].plot(trn_calib["diff"][1].T, "o", label=np.round(trn_calib["qt"][1], 2))
     axs[0,1].legend()
+    axs[0,1].set_title("Pred Time 2 group")
     axs[1,0].plot(trn_calib["diff"][2].T, "o", label=np.round(trn_calib["qt"][2], 2))
     axs[1,0].legend()
+    axs[1,0].set_title("Pred Time 3 group")
+    axs[1,0].set_xlabel("Time")
+    axs[1,0].set_ylabel("SV Diff")
     axs[1,1].plot(trn_calib["diff"][3].T, "o", label=np.round(trn_calib["qt"][3], 2))
     axs[1,1].legend()
+    axs[1,1].set_title("Pred Time 4 group")
+
+    return fig
+
+def calib_metric_cph(sv, y_sk_coh, t, q = np.arange(0,1,.1), single_time=True):
+    qt = np.quantile(sv, q, axis=0)
+    l = len(qt)
+    obs_out = np.zeros((qt.shape[0]))
+    obs_cfhi = np.zeros((qt.shape[0]))
+    obs_cflo = np.zeros((qt.shape[0]))
+    pred_out = np.zeros((qt.shape[0]))
+    diff_out = np.zeros((qt.shape[0]))
+    for idx,lo in enumerate(qt):
+        if idx <= l-2:
+            up = qt[idx+1]
+        else:
+            up = 1.1
+        tmp = np.where(((sv >= lo) & (sv < up)))
+        obs2 = y_sk_coh[tmp]
+        kp = sks.nonparametric.kaplan_meier_estimator(obs2["Status"], obs2["Survival_in_days"], 
+                                                      conf_type="log-log"
+                                                      )
+        obs = np.round(kp[1][-1],3)
+        pred = np.round(sv[tmp].mean(),3)
+        diff = np.round(obs-pred,3)
+        obs_out[idx] = obs
+        obs_cfhi[idx] = kp[2][1][-1]
+        obs_cflo[idx] = kp[2][0][-1]
+        pred_out[idx] = pred
+        diff_out[idx] = diff
+    if single_time:
+        return {"time":t, 
+                "obs":obs_out, 
+                "conf":np.vstack([obs_cflo, obs_cfhi]),
+                "pred":pred_out, 
+                "diff":diff_out, 
+                "qtile":qt}
+    return {
+        "obs":obs_out, 
+        "obs_cfhi":obs_cfhi,
+        "obs_cflo":obs_cflo,
+        "pred":pred_out, 
+        "diff":diff_out, 
+        "qt":qt
+    }
+
+def calib_metric_bart(sv, y_sk_coh, t, q = np.arange(0,1,.1), single_time=True):
+    sv = sv.mean(0)
+    qt = np.quantile(sv[:,t-1], q, axis=0)
+    l = len(qt)
+    obs_out = np.zeros((qt.shape[0], sv.shape[1]))
+    obs_cfhi = np.zeros((qt.shape[0], sv.shape[1]))
+    obs_cflo = np.zeros((qt.shape[0], sv.shape[1]))
+    pred_out = np.zeros((qt.shape[0],sv.shape[1]))
+    diff_out = np.zeros((qt.shape[0],sv.shape[1]))
+    for idx,lo in enumerate(qt):
+        if idx <= l-2:
+            up = qt[idx+1]
+        else:
+            up = 1.1
+        tmp = np.where(((sv[:,t-1] >= lo) & (sv[:,t-1] < up)))
+        obs2 = y_sk_coh[tmp]
+        kp = sks.nonparametric.kaplan_meier_estimator(obs2["Status"], obs2["Survival_in_days"], conf_type="log-log")
+        obs = np.round(kp[1],3)
+        kphi = np.round(kp[2][1],3)
+        kplo = np.round(kp[2][0],3)
+        pred = np.round(sv[tmp].mean(0),3)
+        # fix uneven obs pred len
+        if len(obs) != len(pred):
+            adj = pred
+            adj_hi = pred
+            adj_lo = pred
+            idx_tmp =np.array(kp[0], dtype="int")
+            adj[idx_tmp-1] = kp[1]
+            adj_hi[idx_tmp-1] = kphi
+            adj_lo[idx_tmp-1] = kplo
+            shape_tmp = np.arange(pred.shape[0])
+            sdf = np.setdiff1d(shape_tmp+1,kp[0])
+            adj[sdf-1] = np.NAN
+            adj_hi[sdf-1] = np.NAN
+            adj_lo[sdf-1] = np.NAN
+            print(f"set to NAN for time non exist {adj}")
+            obs = adj
+            kphi = adj_hi
+            kplo = adj_lo
+            
+        diff = np.round(obs-pred,3)
+        obs_out[idx,:] = obs
+        obs_cfhi[idx,:] = kphi
+        obs_cflo[idx,:] = kplo
+        pred_out[idx,:] = pred
+        diff_out[idx, :] = diff
+    if single_time:
+        return {"time":t, 
+                "obs":obs_out[:,t-1], 
+                "conf":np.vstack([obs_cflo[:,t-1], obs_cfhi[:,t-1]]),
+                "pred":pred_out[:,t-1], 
+                "diff":diff_out[:,t-1], 
+                "qtile":qt}
+    return {
+        "obs":obs_out, 
+        "obs_cfhi":obs_cfhi,
+        "obs_cflo":obs_cflo,
+        "pred":pred_out, 
+        "diff":diff_out, 
+        "qt":qt
+    }
+
+def plot_calib_prob(calib_res, title="Calibration Plot"):
+    fig,ax=plt.subplots(figsize=(8,8))
+    # ax.plot(calib_res["pred"], calib_res["obs"], "o")
+    ax.errorbar(calib_res["pred"], 
+                calib_res["obs"], 
+                fmt="o",
+                yerr=np.abs(calib_res["conf"] - calib_res["obs"]))
+    min_val = np.array([calib_res["pred"].min(), calib_res["obs"].min()]).min()
+    # aline = np.arange(min_val-.02, 1.01, 0.01)
+    tcks = np.round((1-min_val)/10,2)
+    aline = np.arange(min_val-0.02, 1.01, tcks)
+    print(tcks)
+    ax.plot(aline,aline, alpha=0.2)
+    ax.set_xlabel("Pred SV Prob")
+    ax.set_ylabel("Obs SV Prob")
+    ax.set_title(title)
+    ax.grid(alpha=0.3)
     return fig
