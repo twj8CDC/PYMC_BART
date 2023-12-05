@@ -649,16 +649,20 @@ def pdp_eval(x_sk_coh, bart_model, var_col, values, var_name=None, sample_n=None
     # get posterior draws
     pdp_post = bart_model.sample_posterior_predictive(pdp_x, pdp_coords, extend_idata=False)
     # get sv_val
+    print("getting sv")
     pdp_val = get_sv_prob(pdp_post)
     # get mean and quantile
+    print("getting sv mean and quantile")
     pdp_mq = get_sv_mean_quant(pdp_val["sv"],pdp[1]["coord"]==1)
 
     # get diff and rr
     pdp_diff = None
     pdp_rr = None
     if diff:
+        print("getting pdp_diff")
         pdp_diff = pdp_diff_metric(pdp_val, pdp[1]["cnt"][0])
     if rr:
+        print("getting pdp rr")
         pdp_rr = pdp_rr_metric(pdp_val, pdp[1]["cnt"][0])   
 
     if return_all:
