@@ -577,7 +577,7 @@ tst_cov_pdp = bmb.pdp_eval(
     var_col = [5], 
     values = [[0,1]], 
     var_name="covid_icd_lab", 
-    sample_n=None, 
+    sample_n=10_000, 
     uniq_times=bart_model.uniq_times)
 
 # COMMAND ----------
