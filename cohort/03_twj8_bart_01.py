@@ -777,18 +777,18 @@ print(f"{mem_info.vms/1_000_000_000} Gb")
 #              fit_options = {"step_size":0.1})
 
 # tmp = cc1
-cc1 = pd.get_dummies(pd.DataFrame(cc1, columns=cc_name), columns=["pat_type", "std_payor", "ms_drg", "race", "hispanic_ind", "i_o_ind"], drop_first=True, dtype="int")
+# cc1 = pd.get_dummies(pd.DataFrame(cc1, columns=cc_name), columns=["pat_type", "std_payor", "ms_drg", "race", "hispanic_ind", "i_o_ind"], drop_first=True, dtype="int")
 
-cph = ll.CoxPHFitter(penalizer=0.0001)
-c2 = cph.fit(cc1, 
-             event_col = "ccsr_ind_p3", 
-             duration_col = "ccsr_tt_p3", 
-             fit_options = {"step_size":0.1})
+# cph = ll.CoxPHFitter(penalizer=0.0001)
+# c2 = cph.fit(cc1, 
+#              event_col = "ccsr_ind_p3", 
+#              duration_col = "ccsr_tt_p3", 
+#              fit_options = {"step_size":0.1})
 
 # COMMAND ----------
 
-ml.log_dict(c2.summary.T.to_dict(), f"{CODE}_all_cph_result.json")
-ml.log_dict({"cindex":c.concordance_index_}, f"{CODE}_all_cph_cindex.json")
+# ml.log_dict(c2.summary.T.to_dict(), f"{CODE}_all_cph_result.json")
+# ml.log_dict({"cindex":c.concordance_index_}, f"{CODE}_all_cph_cindex.json")
 
 # COMMAND ----------
 
