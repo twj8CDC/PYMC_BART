@@ -89,7 +89,7 @@ CHAINS = 8
 dbutils.widgets.text("seed", defaultValue = str(np_seed))
 np_seed1 = dbutils.widgets.get("seed")
 if np_seed1 != "na":
-    np_seed = int(np_seed)
+    np_seed = int(np_seed1)
 
 dbutils.widgets.text("code", defaultValue=str(CODE))
 CODE1 = dbutils.widgets.get("code")
