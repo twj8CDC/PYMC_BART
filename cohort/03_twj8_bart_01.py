@@ -577,7 +577,7 @@ tst_cov_pdp = bmb.pdp_eval(
     var_col = [5], 
     values = [[0,1]], 
     var_name="covid_icd_lab", 
-    sample_n=10000, 
+    sample_n=None, 
     uniq_times=bart_model.uniq_times)
 
 # COMMAND ----------
@@ -671,18 +671,18 @@ ml.log_dict(pdp_summ, f"{CODE}_all_pdp_sample_summary.json")
 
 # COMMAND ----------
 
-process = psutil.Process(os.getpid())
-mem_info = process.memory_info()
-print(f"{mem_info.rss/1_000_000_000} Gb")
-print(f"{mem_info.vms/1_000_000_000} Gb")
+# process = psutil.Process(os.getpid())
+# mem_info = process.memory_info()
+# print(f"{mem_info.rss/1_000_000_000} Gb")
+# print(f"{mem_info.vms/1_000_000_000} Gb")
 
-del trn
-del tst
+# del trn
+# del tst
 
-process = psutil.Process(os.getpid())
-mem_info = process.memory_info()
-print(f"{mem_info.rss/1_000_000_000} Gb")
-print(f"{mem_info.vms/1_000_000_000} Gb")
+# process = psutil.Process(os.getpid())
+# mem_info = process.memory_info()
+# print(f"{mem_info.rss/1_000_000_000} Gb")
+# print(f"{mem_info.vms/1_000_000_000} Gb")
 
 # COMMAND ----------
 
@@ -748,6 +748,21 @@ ml.log_dict(c.summary.T.to_dict(), f"{CODE}_trn_cph_result.json")
 # COMMAND ----------
 
 ml.log_dict({"cindex":c.concordance_index_}, f"{CODE}_trn_cph_cindex.json")
+
+# COMMAND ----------
+
+process = psutil.Process(os.getpid())
+mem_info = process.memory_info()
+print(f"{mem_info.rss/1_000_000_000} Gb")
+print(f"{mem_info.vms/1_000_000_000} Gb")
+
+del tmp
+del tmp_tst
+
+process = psutil.Process(os.getpid())
+mem_info = process.memory_info()
+print(f"{mem_info.rss/1_000_000_000} Gb")
+print(f"{mem_info.vms/1_000_000_000} Gb")
 
 # COMMAND ----------
 
