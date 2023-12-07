@@ -4,6 +4,14 @@
 # COMMAND ----------
 
 # %pip install psutil
+# import psutil
+# import os
+# process = psutil.Process(os.getpid())
+# mem_info = process.memory_info()
+# print(f'shap: ---> {mem_info.rss},{mem_info.vms}')
+
+# print(f"{mem_info.rss/1_000_000} mb")
+# print(f"{mem_info.vms/1_000_000} mb")
 
 # COMMAND ----------
 
@@ -246,7 +254,7 @@ for i in range(0,17):
             print(np.unique(tt, return_counts=True))
             tmp[:,i] = tt
 cc1 = tmp
-tmp = []
+del tmp
 
 # COMMAND ----------
 
@@ -392,23 +400,12 @@ ml.log_dict(diff_dict, f"{CODE}_trn_sv_calib_diff_time_rnk.json")
 # COMMAND ----------
 
 # clear 
-del trn_var
+del trn_val
 
 # COMMAND ----------
 
 # MAGIC %md 
 # MAGIC # OOO
-
-# COMMAND ----------
-
-# import psutil
-# import os
-# process = psutil.Process(os.getpid())
-# mem_info = process.memory_info()
-# print(f'shap: ---> {mem_info.rss},{mem_info.vms}')
-
-# print(f"{mem_info.rss/1_000_000} mb")
-# print(f"{mem_info.vms/1_000_000} mb")
 
 # COMMAND ----------
 
@@ -597,6 +594,7 @@ out
 
 # COMMAND ----------
 
+# drop cov pdp
 del trn_cov_pdp
 del tst_cov_pdp
 
@@ -673,10 +671,6 @@ c = cph.fit(
     fit_options = {"step_size":0.1}
     )
 # c.print_summary()
-
-# COMMAND ----------
-
-importlib.reload(ut)
 
 # COMMAND ----------
 
