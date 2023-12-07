@@ -1,17 +1,15 @@
 # Databricks notebook source
-# MAGIC %pip install scikit-survival pymc pymc_experimental matplotlib colorcet pymc_bart lifelines mlflow
+# MAGIC %pip install scikit-survival pymc pymc_experimental matplotlib colorcet pymc_bart lifelines mlflow psutil
 
 # COMMAND ----------
 
-# %pip install psutil
-# import psutil
-# import os
-# process = psutil.Process(os.getpid())
-# mem_info = process.memory_info()
-# print(f'shap: ---> {mem_info.rss},{mem_info.vms}')
 
-# print(f"{mem_info.rss/1_000_000} mb")
-# print(f"{mem_info.vms/1_000_000} mb")
+import psutil
+import os
+process = psutil.Process(os.getpid())
+mem_info = process.memory_info()
+print(f"{mem_info.rss/1_000_000_000} Gb")
+print(f"{mem_info.vms/1_000_000_000} Gb")
 
 # COMMAND ----------
 
@@ -399,8 +397,18 @@ ml.log_dict(diff_dict, f"{CODE}_trn_sv_calib_diff_time_rnk.json")
 
 # COMMAND ----------
 
-# clear 
+# clear  trn_val
+process = psutil.Process(os.getpid())
+mem_info = process.memory_info()
+print(f"{mem_info.rss/1_000_000_000} Gb")
+print(f"{mem_info.vms/1_000_000_000} Gb")
+
 del trn_val
+
+process = psutil.Process(os.getpid())
+mem_info = process.memory_info()
+print(f"{mem_info.rss/1_000_000_000} Gb")
+print(f"{mem_info.vms/1_000_000_000} Gb")
 
 # COMMAND ----------
 
@@ -506,7 +514,17 @@ ml.log_dict(diff_dict, f"{CODE}_tst_sv_calib_diff_time_rnk.json")
 # COMMAND ----------
 
 # drop tst_val
+process = psutil.Process(os.getpid())
+mem_info = process.memory_info()
+print(f"{mem_info.rss/1_000_000_000} Gb")
+print(f"{mem_info.vms/1_000_000_000} Gb")
+
 del tst_val
+
+process = psutil.Process(os.getpid())
+mem_info = process.memory_info()
+print(f"{mem_info.rss/1_000_000_000} Gb")
+print(f"{mem_info.vms/1_000_000_000} Gb")
 
 # COMMAND ----------
 
@@ -595,8 +613,18 @@ out
 # COMMAND ----------
 
 # drop cov pdp
+process = psutil.Process(os.getpid())
+mem_info = process.memory_info()
+print(f"{mem_info.rss/1_000_000_000} Gb")
+print(f"{mem_info.vms/1_000_000_000} Gb")
+
 del trn_cov_pdp
 del tst_cov_pdp
+
+process = psutil.Process(os.getpid())
+mem_info = process.memory_info()
+print(f"{mem_info.rss/1_000_000_000} Gb")
+print(f"{mem_info.vms/1_000_000_000} Gb")
 
 # COMMAND ----------
 
