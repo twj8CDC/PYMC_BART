@@ -671,6 +671,21 @@ ml.log_dict(pdp_summ, f"{CODE}_all_pdp_sample_summary.json")
 
 # COMMAND ----------
 
+process = psutil.Process(os.getpid())
+mem_info = process.memory_info()
+print(f"{mem_info.rss/1_000_000_000} Gb")
+print(f"{mem_info.vms/1_000_000_000} Gb")
+
+del trn
+del tst
+
+process = psutil.Process(os.getpid())
+mem_info = process.memory_info()
+print(f"{mem_info.rss/1_000_000_000} Gb")
+print(f"{mem_info.vms/1_000_000_000} Gb")
+
+# COMMAND ----------
+
 # MAGIC %md 
 # MAGIC # CPH
 # MAGIC - need to onehot this
@@ -737,11 +752,20 @@ ml.log_dict({"cindex":c.concordance_index_}, f"{CODE}_trn_cph_cindex.json")
 # COMMAND ----------
 
 # Full dataset
-tmp = cc1
-tmp = pd.get_dummies(pd.DataFrame(tmp, columns=cc_name), columns=["pat_type", "std_payor", "ms_drg", "race", "hispanic_ind", "i_o_ind"], drop_first=True, dtype="int")
+# tmp = cc1
+# tmp = pd.get_dummies(pd.DataFrame(tmp, columns=cc_name), columns=["pat_type", "std_payor", "ms_drg", "race", "hispanic_ind", "i_o_ind"], drop_first=True, dtype="int")
+
+# cph = ll.CoxPHFitter(penalizer=0.0001)
+# c2 = cph.fit(tmp, 
+#              event_col = "ccsr_ind_p3", 
+#              duration_col = "ccsr_tt_p3", 
+#              fit_options = {"step_size":0.1})
+
+# tmp = cc1
+cc1 = pd.get_dummies(pd.DataFrame(cc1, columns=cc_name), columns=["pat_type", "std_payor", "ms_drg", "race", "hispanic_ind", "i_o_ind"], drop_first=True, dtype="int")
 
 cph = ll.CoxPHFitter(penalizer=0.0001)
-c2 = cph.fit(tmp, 
+c2 = cph.fit(cc1, 
              event_col = "ccsr_ind_p3", 
              duration_col = "ccsr_tt_p3", 
              fit_options = {"step_size":0.1})
