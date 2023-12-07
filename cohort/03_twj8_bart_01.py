@@ -3,6 +3,10 @@
 
 # COMMAND ----------
 
+# %pip install psutil
+
+# COMMAND ----------
+
 import pyspark.sql.functions as F
 import pyspark.sql.window as W
 from pyspark.storagelevel import StorageLevel
@@ -387,8 +391,24 @@ ml.log_dict(diff_dict, f"{CODE}_trn_sv_calib_diff_time_rnk.json")
 
 # COMMAND ----------
 
+# clear 
+del trn_var
+
+# COMMAND ----------
+
 # MAGIC %md 
 # MAGIC # OOO
+
+# COMMAND ----------
+
+# import psutil
+# import os
+# process = psutil.Process(os.getpid())
+# mem_info = process.memory_info()
+# print(f'shap: ---> {mem_info.rss},{mem_info.vms}')
+
+# print(f"{mem_info.rss/1_000_000} mb")
+# print(f"{mem_info.vms/1_000_000} mb")
 
 # COMMAND ----------
 
@@ -488,6 +508,11 @@ ml.log_dict(diff_dict, f"{CODE}_tst_sv_calib_diff_time_rnk.json")
 
 # COMMAND ----------
 
+# drop tst_val
+del tst_val
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC # Variable Importance
 
@@ -527,7 +552,7 @@ trn_cov_pdp = bmb.pdp_eval(
     var_col = [5], 
     values = [[0,1]],
     var_name="covid_icd_lab", 
-    sample_n=5000, 
+    sample_n=2000, 
     uniq_times=bart_model.uniq_times
     )
 
@@ -561,13 +586,19 @@ ml.log_figure(fig, title)
 # COMMAND ----------
 
 out = {}
-for n,s in [("trn_rr",trn_cov_pdp["pdp_rr"]), ("tst_rr",tst_cov_pdp["pdp_rr"]), ("trn_diff",trn_cov_pdp["pdp_diff"]), ("tst_diff",tst_cov_pdp["pdp_diff"])]:
+for n,s in [("trn_rr",trn_cov_pdp["pdp_rr"]), ("tst_rr",tst_cov_pdp["pdp_rr"]), 
+            ("trn_diff",trn_cov_pdp["pdp_diff"]), ("tst_diff",tst_cov_pdp["pdp_diff"])]:
     tmp = {}
     for k in s.keys():
         tmp[k] = s[k].tolist()
     out[n] = tmp
 ml.log_dict(out, f"{CODE}_pdp_covid_trn_tst.json")
 out
+
+# COMMAND ----------
+
+del trn_cov_pdp
+del tst_cov_pdp
 
 # COMMAND ----------
 
@@ -604,6 +635,7 @@ for v in var_dict:
         "rr_ql": np.round(pdp["pdp_rr"]["rr_q"].mean(1)[0],3).tolist(),
         "rr_qh": np.round(pdp["pdp_rr"]["rr_q"].mean(1)[1],3).tolist()
     }
+    del pdp
 
 
 
