@@ -296,8 +296,17 @@ bart_model = bmb.BartSurvModel(model_config=model_dict, sampler_config=sampler_d
 
 # COMMAND ----------
 
+# # fit model
+# bart_model.fit(trn["coh_y"], trn["coh_x"], trn["coh_w"], trn["coh_coords"])
+# # sample posterior
+# post = bart_model.sample_posterior_predictive(trn["x_tst"], trn["tst_coords"], extend_idata=True)
+
 # fit model
-bart_model.fit(trn["coh_y"], trn["coh_x"], trn["coh_w"], trn["coh_coords"])
+bart_model.fit(trn["coh_y"].astype(np.float32),
+               trn["coh_x"].astype(np.float32), 
+               trn["coh_w"].astype(np.float32), 
+               trn["coh_coords"].astype(np.float32)
+               )
 # sample posterior
 post = bart_model.sample_posterior_predictive(trn["x_tst"], trn["tst_coords"], extend_idata=True)
 
