@@ -383,8 +383,11 @@ cb = ut.calib_metric_bart(
     single_time=True
 )
 title = f"{CODE}_trn_sv_calib_plot.png"
-fig = ut.plot_calib_prob(cb, title)
-ml.log_figure(fig, title)
+try:
+    fig = ut.plot_calib_prob(cb, title)
+    ml.log_figure(fig, title)
+except:
+    print("No Plot Available")
 
 # COMMAND ----------
 
@@ -499,8 +502,11 @@ cb = ut.calib_metric_bart(
 )
 
 title = f"{CODE}_tst_sv_calib_plot.png"
-fig = ut.plot_calib_prob(cb, title)
-ml.log_figure(fig, title)
+try:
+    fig = ut.plot_calib_prob(cb, title)
+    ml.log_figure(fig, title)
+except:
+    print("No Plot Available")
 
 # COMMAND ----------
 
@@ -725,8 +731,11 @@ cb2 = ut.calib_metric_cph(cph_sv,
                                q = np.arange(0,1,0.1), 
                                single_time=True)
 title =f"{CODE}_trn_cph_sv_calib_plot.png"
-fig = ut.plot_calib_prob(cb2, title)
-ml.log_figure(fig, title)
+try:
+    fig = ut.plot_calib_prob(cb2, title)
+    ml.log_figure(fig, title)
+except:
+    print("No Plot Available")
 
 # COMMAND ----------
 
@@ -738,8 +747,11 @@ cb2 = ut.calib_metric_cph(cph_sv,
                                q = np.arange(0,1,0.1), 
                                single_time=True)
 title =f"{CODE}_tst_cph_sv_calib_plot.png"
-fig = ut.plot_calib_prob(cb2, title)
-ml.log_figure(fig, title)
+try:
+    fig = ut.plot_calib_prob(cb2, title)
+    ml.log_figure(fig, title)
+except:
+    print("No Plot Available")
 
 # COMMAND ----------
 
