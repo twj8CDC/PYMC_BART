@@ -313,12 +313,14 @@ tst = bmb.get_coh(y_sk, cc1, sample_n = SAMPLE_TST, balance=False, train=False, 
 trn_counts = np.unique(trn["x_sk_coh"][:,5], return_counts=True)
 tst_counts = np.unique(tst["x_sk_coh"][:,5], return_counts=True)
 counts_dict = {
-    "trn":{"ncov":trn_counts[1][0],
-           "cov":trn_counts[1][1],
-           "prop_cov": trn_counts[1][1]/SAMPLE_TRN},
-    "tst":{"ncov":tst_counts[1][0],
-           "cov":tst_counts[1][1],
-           "prop_cov": tst_counts[1][1]/SAMPLE_TST}
+    "trn":{"ncov":int(trn_counts[1][0]),
+           "cov":int(trn_counts[1][1]),
+           "prop_cov": int(trn_counts[1][1]/SAMPLE_TRN)
+           },
+    "tst":{"ncov":int(tst_counts[1][0]),
+           "cov":int(tst_counts[1][1]),
+           "prop_cov": int(tst_counts[1][1]/SAMPLE_TST)
+           }
 }
 ml.log_dict(counts_dict, f"{CODE}_samples_counts.json")
 
