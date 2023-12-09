@@ -796,7 +796,7 @@ print(f"{mem_info.vms/1_000_000_000} Gb")
 
 del trn
 del tst 
-del post 
+
 
 process = psutil.Process(os.getpid())
 mem_info = process.memory_info()
