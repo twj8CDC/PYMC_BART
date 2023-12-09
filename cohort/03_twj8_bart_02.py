@@ -79,6 +79,7 @@ TUNE = 300
 CORES = 8
 CHAINS = 8
 PDP_ALL = True
+WEIGHT = 1
 
 
 
@@ -159,6 +160,11 @@ PDP_ALL1 = dbutils.widgets.get("pdp_all")
 if PDP_ALL1 != "na":
     PDP_ALL = eval(PDP_ALL1)
 
+dbutils.widgets.text("weight", defaultValue=str(WEIGHT))
+WEIGHT1 = dbutils.widgets.get("weight")
+if WEIGHT1 != "na":
+    WEIGHT = int(WEIGHT1)
+
 # COMMAND ----------
 
 # import sys
@@ -224,8 +230,21 @@ ccsr_s = spark.table("cdh_premier_exploratory.twj8_pat_ccsr_short_f_06")
 cov = spark.table("cdh_premier_exploratory.twj8_pat_covariates_f_07")
 
 
+
+process = psutil.Process(os.getpid())
+mem_info = process.memory_info()
+print(f"{mem_info.rss/1_000_000_000} Gb")
+print(f"{mem_info.vms/1_000_000_000} Gb")
+
 # Get the datasets data
 cc1, cc_name = bmb.get_sk_sp(ccsr_s, cov, CODE)
+
+
+process = psutil.Process(os.getpid())
+mem_info = process.memory_info()
+print(f"{mem_info.rss/1_000_000_000} Gb")
+print(f"{mem_info.vms/1_000_000_000} Gb")
+
 
 # COMMAND ----------
 
@@ -261,16 +280,54 @@ del tmp
 
 # COMMAND ----------
 
+process = psutil.Process(os.getpid())
+mem_info = process.memory_info()
+print(f"{mem_info.rss/1_000_000_000} Gb")
+print(f"{mem_info.vms/1_000_000_000} Gb")
+
+
+# COMMAND ----------
+
 # adjust time and y_sk
 t_event_scale = bmb.get_time_transform(cc1[:,1], time_scale=TIME_SCALE)
 y_sk = bmb.get_y_sklearn(cc1[:,0], t_event_scale)
 
 # COMMAND ----------
 
+process = psutil.Process(os.getpid())
+mem_info = process.memory_info()
+print(f"{mem_info.rss/1_000_000_000} Gb")
+print(f"{mem_info.vms/1_000_000_000} Gb")
+
+
+# COMMAND ----------
+
 # get train
-trn = bmb.get_coh(y_sk, cc1, sample_n = SAMPLE_TRN, balance=BALANCE, train=True, idx=None, seed = np_seed)
+trn = bmb.get_coh(y_sk, cc1, sample_n = SAMPLE_TRN, balance=BALANCE, train=True, idx=None, seed = np_seed, prop=PROP)
 # get test
-tst = bmb.get_coh(y_sk, cc1, sample_n = SAMPLE_TST, balance=False, train=False, idx=trn["idx"], seed = np_seed, resample=False)
+tst = bmb.get_coh(y_sk, cc1, sample_n = SAMPLE_TST, balance=False, train=False, idx=trn["idx"], seed = np_seed, resample=False, prop=1)
+
+# COMMAND ----------
+
+trn_counts = np.unique(trn["x_sk_coh"][:,5], return_counts=True)
+tst_counts = np.unique(tst["x_sk_coh"][:,5], return_counts=True)
+counts_dict = {
+    "trn":{"ncov":trn_counts[1][0],
+           "cov":trn_counts[1][1],
+           "prop_cov": trn_counts[1][1]/SAMPLE_TRN},
+    "tst":{"ncov":tst_counts[1][0],
+           "cov":tst_counts[1][1],
+           "prop_cov": tst_counts[1][1]/SAMPLE_TST}
+}
+ml.log_dict(counts_dict, f"{CODE}_samples_counts.json")
+
+
+# COMMAND ----------
+
+process = psutil.Process(os.getpid())
+mem_info = process.memory_info()
+print(f"{mem_info.rss/1_000_000_000} Gb")
+print(f"{mem_info.vms/1_000_000_000} Gb")
 
 # COMMAND ----------
 
@@ -309,6 +366,13 @@ bart_model.fit(trn["coh_y"].astype(np.float32),
                )
 # sample posterior
 post = bart_model.sample_posterior_predictive(trn["x_tst"], trn["tst_coords"], extend_idata=True)
+
+# COMMAND ----------
+
+process = psutil.Process(os.getpid())
+mem_info = process.memory_info()
+print(f"{mem_info.rss/1_000_000_000} Gb")
+print(f"{mem_info.vms/1_000_000_000} Gb")
 
 # COMMAND ----------
 
@@ -684,6 +748,8 @@ if PDP_ALL:
         }
         del pdp
     ml.log_dict(pdp_summ, f"{CODE}_all_pdp_sample_summary.json")
+    del pdp_summ
+    del pdp_dict
 
 
 # COMMAND ----------
@@ -713,17 +779,43 @@ if PDP_ALL:
 
 # COMMAND ----------
 
-tmp = cc1[trn["idx"]["sample_idx"]]
+# pull of trn idx and tst idx
+trn_idx = trn["idx"]["sample_idx"]
+tst_idx = tst["idx_test"]
+
+# drop the other large memory items
+process = psutil.Process(os.getpid())
+mem_info = process.memory_info()
+print(f"{mem_info.rss/1_000_000_000} Gb")
+print(f"{mem_info.vms/1_000_000_000} Gb")
+
+del trn
+del tst 
+del post 
+
+process = psutil.Process(os.getpid())
+mem_info = process.memory_info()
+print(f"{mem_info.rss/1_000_000_000} Gb")
+print(f"{mem_info.vms/1_000_000_000} Gb")
+
+# COMMAND ----------
+
+# tmp = cc1[trn["idx"]["sample_idx"]]
+tmp = cc1[trn_idx]
 tmp = pd.get_dummies(pd.DataFrame(tmp, columns=cc_name), columns=["pat_type", "std_payor", "ms_drg", "race", "hispanic_ind", "i_o_ind"], drop_first=True, dtype="int")
 
 # COMMAND ----------
 
-tst["idx_test"].shape
+# tmp_tst = cc1[tst["idx_test"]]
+tmp_tst = cc1[tst_idx]
+tmp_tst = pd.get_dummies(pd.DataFrame(tmp_tst, columns=cc_name), columns=["pat_type", "std_payor", "ms_drg", "race", "hispanic_ind", "i_o_ind"], drop_first=True, dtype="int")
 
 # COMMAND ----------
 
-tmp_tst = cc1[tst["idx_test"]]
-tmp_tst = pd.get_dummies(pd.DataFrame(tmp_tst, columns=cc_name), columns=["pat_type", "std_payor", "ms_drg", "race", "hispanic_ind", "i_o_ind"], drop_first=True, dtype="int")
+process = psutil.Process(os.getpid())
+mem_info = process.memory_info()
+print(f"{mem_info.rss/1_000_000_000} Gb")
+print(f"{mem_info.vms/1_000_000_000} Gb")
 
 # COMMAND ----------
 
@@ -734,7 +826,7 @@ c = cph.fit(
     duration_col = "ccsr_tt_p3", 
     fit_options = {"step_size":0.1}
     )
-# c.print_summary()
+c.print_summary()
 
 # COMMAND ----------
 
@@ -771,9 +863,6 @@ except:
 # COMMAND ----------
 
 ml.log_dict(c.summary.T.to_dict(), f"{CODE}_trn_cph_result.json")
-
-# COMMAND ----------
-
 ml.log_dict({"cindex":c.concordance_index_}, f"{CODE}_trn_cph_cindex.json")
 
 # COMMAND ----------
@@ -795,13 +884,7 @@ print(f"{mem_info.vms/1_000_000_000} Gb")
 
 # Full dataset
 # tmp = cc1
-# tmp = pd.get_dummies(pd.DataFrame(tmp, columns=cc_name), columns=["pat_type", "std_payor", "ms_drg", "race", "hispanic_ind", "i_o_ind"], drop_first=True, dtype="int")
-
-# cph = ll.CoxPHFitter(penalizer=0.0001)
-# c2 = cph.fit(tmp, 
-#              event_col = "ccsr_ind_p3", 
-#              duration_col = "ccsr_tt_p3", 
-#              fit_options = {"step_size":0.1})
+cc1 = pd.get_dummies(pd.DataFrame(cc1, columns=cc_name), columns=["pat_type", "std_payor", "ms_drg", "race", "hispanic_ind", "i_o_ind"], drop_first=True, dtype="int")
 
 # tmp = cc1
 # cc1 = pd.get_dummies(pd.DataFrame(cc1, columns=cc_name), columns=["pat_type", "std_payor", "ms_drg", "race", "hispanic_ind", "i_o_ind"], drop_first=True, dtype="int")
@@ -814,8 +897,18 @@ print(f"{mem_info.vms/1_000_000_000} Gb")
 
 # COMMAND ----------
 
-# ml.log_dict(c2.summary.T.to_dict(), f"{CODE}_all_cph_result.json")
-# ml.log_dict({"cindex":c.concordance_index_}, f"{CODE}_all_cph_cindex.json")
+cph = ll.CoxPHFitter(penalizer=0.0001)
+c2 = cph.fit(cc1, 
+             event_col = "ccsr_ind_p3", 
+             duration_col = "ccsr_tt_p3", 
+             fit_options = {"step_size":0.1})
+
+c2.print_summary()
+
+# COMMAND ----------
+
+ml.log_dict(c2.summary.T.to_dict(), f"{CODE}_all_cph_result.json")
+ml.log_dict({"cindex":c.concordance_index_}, f"{CODE}_all_cph_cindex.json")
 
 # COMMAND ----------
 

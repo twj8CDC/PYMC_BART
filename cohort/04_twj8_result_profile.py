@@ -80,4 +80,14 @@ except:
 
 # COMMAND ----------
 
+import numpy as np
+
+# COMMAND ----------
+
+a = np.array([1.1,2,3,4])
+a.dtype
+a.astype(np.float32)
+
+# COMMAND ----------
+
 spark
