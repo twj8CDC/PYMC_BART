@@ -209,7 +209,7 @@ model_dict_main = {
     "DRAWS":DRAWS,
     "TUNE":TUNE,
     "CORES":CORES,
-    "CHAINS":CHAINS
+    "CHAINS":CHAINS,
     "WEIGHT":WEIGHT
 }
 
