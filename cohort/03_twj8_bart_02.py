@@ -210,6 +210,7 @@ model_dict_main = {
     "TUNE":TUNE,
     "CORES":CORES,
     "CHAINS":CHAINS
+    "WEIGHT":WEIGHT
 }
 
 ml.log_dict(global_dict, f"{CODE}_global_dict.json")
@@ -303,7 +304,7 @@ print(f"{mem_info.vms/1_000_000_000} Gb")
 # COMMAND ----------
 
 # get train
-trn = bmb.get_coh(y_sk, cc1, sample_n = SAMPLE_TRN, balance=BALANCE, train=True, idx=None, seed = np_seed, prop=PROP)
+trn = bmb.get_coh(y_sk, cc1, sample_n = SAMPLE_TRN, balance=BALANCE, train=True, idx=None, seed = np_seed, prop=WEIGHT)
 # get test
 tst = bmb.get_coh(y_sk, cc1, sample_n = SAMPLE_TST, balance=False, train=False, idx=trn["idx"], seed = np_seed, resample=False, prop=1)
 
