@@ -315,11 +315,11 @@ tst_counts = np.unique(tst["x_sk_coh"][:,5], return_counts=True)
 counts_dict = {
     "trn":{"ncov":int(trn_counts[1][0]),
            "cov":int(trn_counts[1][1]),
-           "prop_cov": int(trn_counts[1][1]/SAMPLE_TRN)
+           "prop_cov": float(trn_counts[1][1]/SAMPLE_TRN)
            },
     "tst":{"ncov":int(tst_counts[1][0]),
            "cov":int(tst_counts[1][1]),
-           "prop_cov": int(tst_counts[1][1]/SAMPLE_TST)
+           "prop_cov": float(tst_counts[1][1]/SAMPLE_TST)
            }
 }
 ml.log_dict(counts_dict, f"{CODE}_samples_counts.json")
