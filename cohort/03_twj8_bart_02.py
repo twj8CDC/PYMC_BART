@@ -368,7 +368,7 @@ bart_model.fit(trn["coh_y"].astype(np.float32),
                trn["coh_coords"].astype(np.float32)
                )
 # sample posterior
-post = bart_model.sample_posterior_predictive(trn["x_tst"], trn["tst_coords"], extend_idata=True)
+post = bart_model.sample_posterior_predictive(trn["x_tst"], trn["tst_coords"], extend_idata=False)
 
 # COMMAND ----------
 
@@ -488,6 +488,7 @@ print(f"{mem_info.rss/1_000_000_000} Gb")
 print(f"{mem_info.vms/1_000_000_000} Gb")
 
 del trn_val
+del post
 
 process = psutil.Process(os.getpid())
 mem_info = process.memory_info()
@@ -607,6 +608,7 @@ print(f"{mem_info.rss/1_000_000_000} Gb")
 print(f"{mem_info.vms/1_000_000_000} Gb")
 
 del tst_val
+del tst_post
 
 process = psutil.Process(os.getpid())
 mem_info = process.memory_info()
