@@ -776,6 +776,20 @@ except:
 
 # COMMAND ----------
 
+try:
+    cb_dict = {
+        "exp":cb2["obs"].tolist(),
+        "pred":cb2["pred"].tolist(),
+        "diff":cb2["diff"].tolist(),
+        "qt": cb2["qtile"].tolist()
+    }
+    print(cb_dict)
+    ml.log_dict(cb_dict, f"{CODE}_cph_trn_sv_calib.json")
+except:
+    print("Failed to save")
+
+# COMMAND ----------
+
 cph_sv = c.predict_survival_function(tmp_tst, 365).T.to_numpy().squeeze()
 tmp_sk_y = bmb.get_y_sklearn(tmp_tst["ccsr_ind_p3"], tmp_tst["ccsr_tt_p3"])
 cb2 = ut.calib_metric_cph(cph_sv, 
@@ -789,6 +803,20 @@ try:
     ml.log_figure(fig, title)
 except:
     print("No Plot Available")
+
+# COMMAND ----------
+
+try:
+    cb_dict = {
+        "exp":cb2["obs"].tolist(),
+        "pred":cb2["pred"].tolist(),
+        "diff":cb2["diff"].tolist(),
+        "qt": cb2["qtile"].tolist()
+    }
+    print(cb_dict)
+    ml.log_dict(cb_dict, f"{CODE}_cph_tst_sv_calib.json")
+except:
+    print("Failed to save")
 
 # COMMAND ----------
 
