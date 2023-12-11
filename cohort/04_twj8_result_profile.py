@@ -91,3 +91,12 @@ a.astype(np.float32)
 # COMMAND ----------
 
 spark
+
+# COMMAND ----------
+
+import os
+
+# COMMAND ----------
+
+for i in os.popen("ps"):
+    print(i)

@@ -57,7 +57,7 @@ BALANCE = True
 SAMPLE_TRN = 10_000
 SAMPLE_TST = 10_000
 
-TREES = 20
+TREES = 40
 SPLIT_RULES =  [
     "pmb.ContinuousSplitRule()", # time
     "pmb.OneHotSplitRule", # ccsr_ind_p2
@@ -76,10 +76,10 @@ SPLIT_RULES =  [
     "pmb.OneHotSplitRule()", #hispanic_ind
     "pmb.OneHotSplitRule()" # i_o_ind
     ]
-DRAWS = 200
-TUNE = 200
-CORES = 2
-CHAINS = 2
+DRAWS = 600
+TUNE = 600
+CORES = 4
+CHAINS = 4
 PDP_ALL = True
 WEIGHT = 1
 RUN_NUM = 1
@@ -423,10 +423,8 @@ ml.log_dict(diff_dict, f"{CODE}_trn_sv_calib_diff_time_rnk.json")
 
 # clear  trn_val
 mem_chk()
-
 del trn_val
 del post
-
 mem_chk()
 
 # COMMAND ----------
@@ -596,8 +594,9 @@ trn_cov_pdp = bmb.pdp_eval(
     var_col = [5], 
     values = [[0,1]],
     var_name="covid_icd_lab", 
-    sample_n=2000, 
-    uniq_times=bart_model.uniq_times
+    sample_n=10_000, 
+    uniq_times=bart_model.uniq_times,
+    return_all = True
     )
 
 tst_cov_pdp = bmb.pdp_eval(
@@ -607,11 +606,31 @@ tst_cov_pdp = bmb.pdp_eval(
     values = [[0,1]], 
     var_name="covid_icd_lab", 
     sample_n=10_000, 
-    uniq_times=bart_model.uniq_times)
+    uniq_times=bart_model.uniq_times,
+    return_all=True
+    )
 
 # COMMAND ----------
 
-title = f"{CODE}_pdp_sv_plot.png"
+title = f"{CODE}_trn_pdp_sv_plot.png"
+fig = ut.sv_plot(
+    sv= trn_cov_pdp["pdp_mq"], 
+    y_sk_coh = trn["y_sk_coh"], 
+    msk=trn["msk"], 
+    y_sk=y_sk, 
+    title = title,
+    cc1=cc1, 
+    strat=True, 
+    cred_int=True, 
+    kpm_all=False, 
+    kpm_sample=False,
+    whr = "mid"
+)
+ml.log_figure(fig, title)
+
+# COMMAND ----------
+
+title = f"{CODE}_tst_pdp_sv_plot.png"
 fig = ut.sv_plot(
     sv= tst_cov_pdp["pdp_mq"], 
     y_sk_coh = tst["y_sk_coh"], 
@@ -648,6 +667,7 @@ del trn_cov_pdp
 del tst_cov_pdp
 
 mem_chk()
+
 
 # COMMAND ----------
 
@@ -725,7 +745,7 @@ tmp_tst = pd.get_dummies(pd.DataFrame(tmp_tst, columns=cc_name), columns=["pat_t
 
 # COMMAND ----------
 
-mem_chk
+mem_chk()
 
 # COMMAND ----------
 
@@ -819,4 +839,12 @@ ml.end_run()
 
 # COMMAND ----------
 
-dbutils.notebook.exit("Stop python to clear memory")
+gc.collect()
+
+# COMMAND ----------
+
+mem_chk()
+
+# COMMAND ----------
+
+dbutils.notebook.exit("exit notebook task")

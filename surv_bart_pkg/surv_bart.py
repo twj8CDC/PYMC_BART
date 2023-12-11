@@ -464,11 +464,11 @@ def get_pdp(x_sk, var_col, values=[], qt=[0.25,0.5,0.75], sample_n=None):
         cart = np.dstack(np.meshgrid(*var_vals)).reshape(-1, s1)
     else:
         cart = np.array(var_vals[0]).reshape(-1,1)
-    s2 = cart.shape[0]
-    s3 = x_sk.shape[0]
-    out_sk = np.tile(x_sk, (s2,1))
-    l_cart = np.repeat(cart, s3, axis=0)
-    for idx, var in enumerate(var_col):
+    s2 = cart.shape[0] # number of vals
+    s3 = x_sk.shape[0] # number of obs
+    out_sk = np.tile(x_sk, (s2,1)) # tile x_sk into blocks of number of vals
+    l_cart = np.repeat(cart, s3, axis=0) # repeat vals number of obs times
+    for idx, var in enumerate(var_col): # fill the columns of the x_sk*blocks with new values
         out_sk[:,var] = l_cart[:,idx]
     # index
     c_idx = np.repeat(np.arange(s2),s3)
@@ -666,6 +666,6 @@ def pdp_eval(x_sk_coh, bart_model, var_col, values, var_name=None, sample_n=None
         pdp_rr = pdp_rr_metric(pdp_val, pdp[1]["cnt"][0])   
 
     if return_all:
-        return {"pdp_varname":var_name, "pdp_x":pdp_x, "pdp_coords":pdp_coords, "pdp_post":pdp_post, "pdp_val":pdp_val, "pdp_mq":pdp_mq, "pdp_diff":pdp_diff, "pdp_rr":pdp_rr}
+        return {"pdp_varname":var_name, "pdp_x":pdp_x, "pdp_coords":[pdp_coords, pdp[1]["coord"]], "pdp_post":pdp_post, "pdp_val":pdp_val, "pdp_mq":pdp_mq, "pdp_diff":pdp_diff, "pdp_rr":pdp_rr}
     else:
         return {"pdp_varname":var_name, "pdp_val":pdp_val, "pdp_mq":pdp_mq, "pdp_diff":pdp_diff, "pdp_rr":pdp_rr}
