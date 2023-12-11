@@ -144,4 +144,4 @@ dbutils.jobs.taskValues.set(key = 'weight', value = WEIGHT)
 
 # COMMAND ----------
 
-dbutils.jobs.taskValues.get(taskKey= key="split_rules")
+# dbutils.jobs.taskValues.get(taskKey= key="split_rules")
