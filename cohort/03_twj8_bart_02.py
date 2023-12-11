@@ -109,7 +109,7 @@ if EXP_ID1 != "na":
 # TIME_SCALE = dbutils.jobs.taskValues.get(taskKey = "pcc_mul_setup", key = "time_scale", default = 42, debugValue = 0)
 
 # dbutils.widgets.text("time_scale", defaultValue=str(TIME_SCALE))
-TIME_SCALE1 = dbutils.widgets.get("pcc_mult_setup", "time_scale", TIME_SCALE)
+TIME_SCALE1 = dbutils.jobs.taskValues.get("pcc_mult_setup", "time_scale", TIME_SCALE)
 if TIME_SCALE1 != "na":
     TIME_SCALE = float(TIME_SCALE1)
 print(TIME_SCALE)
