@@ -49,15 +49,15 @@ np_seed = int(np.ceil(time.time()))
 # COMMAND ----------
 
 # GLOBALS
-CODE = "EAR"
+CODE = "CIR"
 RUN_NAME = f"{CODE}_run_01"
 EXP_ID = 502851330942627
 TIME_SCALE = 91.5
 BALANCE = True
 SAMPLE_TRN = 10_000
-SAMPLE_TST = 20_000
+SAMPLE_TST = 10_000
 
-TREES = 30
+TREES = 20
 SPLIT_RULES =  [
     "pmb.ContinuousSplitRule()", # time
     "pmb.OneHotSplitRule", # ccsr_ind_p2
@@ -76,10 +76,10 @@ SPLIT_RULES =  [
     "pmb.OneHotSplitRule()", #hispanic_ind
     "pmb.OneHotSplitRule()" # i_o_ind
     ]
-DRAWS = 300
-TUNE = 300
-CORES = 8
-CHAINS = 8
+DRAWS = 200
+TUNE = 200
+CORES = 2
+CHAINS = 2
 PDP_ALL = True
 WEIGHT = 1
 RUN_NUM = 1
@@ -193,7 +193,6 @@ mem_chk()
 cc1, cc_name = bmb.get_sk_sp(ccsr_s, cov, CODE)
 
 mem_chk()
-
 
 # COMMAND ----------
 
@@ -404,10 +403,10 @@ try:
         "exp":cb["obs"].tolist(),
         "pred":cb["pred"].tolist(),
         "diff":cb["diff"].tolist(),
-        "qt": cb["qt"].tolist()
+        "qt": cb["qtile"].tolist()
     }
-    print(cb_dict)
     ml.log_dict(cb_dict, f"{CODE}_tst_sv_calib.json")
+    print(cb_dict)  
 except:
     print("Failed to save")
 
@@ -532,7 +531,7 @@ try:
         "exp":cb["obs"].tolist(),
         "pred":cb["pred"].tolist(),
         "diff":cb["diff"].tolist(),
-        "qt": cb["qt"].tolist()
+        "qt": cb["qtile"].tolist()
     }
     print(cb_dict)
     ml.log_dict(cb_dict, f"{CODE}_tst_sv_calib.json")
@@ -648,7 +647,7 @@ mem_chk()
 del trn_cov_pdp
 del tst_cov_pdp
 
-mem_check
+mem_chk()
 
 # COMMAND ----------
 
