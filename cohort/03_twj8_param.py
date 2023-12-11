@@ -70,7 +70,7 @@ dbutils.widgets.text("balance", defaultValue=str(BALANCE))
 BALANCE1 = dbutils.widgets.get("balance")
 if BALANCE1 != "na":
     BALANCE = eval(BALANCE1)
-dbutils.jobs.taskValues.set(key = 'balancd', value = BALANCE)
+dbutils.jobs.taskValues.set(key = 'balance', value = BALANCE)
 
 
 dbutils.widgets.text("sample_trn", defaultValue=str(SAMPLE_TRN))
@@ -149,7 +149,3 @@ if RUN_NUM1 != "na":
     RUN_NUM = RUN_NUM1
 dbutils.jobs.taskValues.set(key = 'run_num', value = RUN_NUM)
 
-
-# COMMAND ----------
-
-# dbutils.jobs.taskValues.get(taskKey= key="split_rules")
