@@ -944,3 +944,7 @@ ml.log_dict({"cindex":c.concordance_index_}, f"{CODE}_all_cph_cindex.json")
 # COMMAND ----------
 
 ml.end_run()
+
+# COMMAND ----------
+
+dbutils.notebook.exit("Stop ptyhon to clear memory")
