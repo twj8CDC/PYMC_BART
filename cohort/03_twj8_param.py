@@ -142,6 +142,13 @@ if WEIGHT1 != "na":
 dbutils.jobs.taskValues.set(key = 'weight', value = WEIGHT)
 
 
+dbutils.widgets.text("run_num", defaultValue=str(RUN_NUM))
+RUN_NUM1 = dbutils.widgets.get("run_num")
+if RUN_NUM1 != "na":
+    RUN_NUM = RUN_NUM1
+dbutils.jobs.taskValues.set(key = 'run_num', value = RUN_NUM)
+
+
 # COMMAND ----------
 
 # dbutils.jobs.taskValues.get(taskKey= key="split_rules")

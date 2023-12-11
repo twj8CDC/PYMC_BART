@@ -48,7 +48,7 @@ np_seed = int(np.ceil(time.time()))
 
 # GLOBALS
 CODE = "EAR"
-RUN_NAME = f"{CODE}_run_02"
+RUN_NAME = f"{CODE}_run_01"
 EXP_ID = 502851330942627
 TIME_SCALE = 91.5
 BALANCE = True
@@ -80,6 +80,7 @@ CORES = 8
 CHAINS = 8
 PDP_ALL = True
 WEIGHT = 1
+RUN_NUM = 1
 
 
 
@@ -95,25 +96,53 @@ CODE1 = dbutils.widgets.get("code")
 if CODE1 != "na":
     CODE = CODE1
 
-dbutils.widgets.text("run_name", defaultValue=str(RUN_NAME))
-RUN_NAME1 = dbutils.widgets.get("run_name")
-if RUN_NAME1 != "na":
-    RUN_NAME = RUN_NAME1
+# dbutils.widgets.text("run_name", defaultValue=str(RUN_NAME))
+# RUN_NAME1 = dbutils.widgets.get("run_name")
+# if RUN_NAME1 != "na":
+#     RUN_NAME = RUN_NAME1
 
-dbutils.widgets.text("exp_id", defaultValue=str(EXP_ID))
-EXP_ID1 = dbutils.widgets.get("exp_id")
-if EXP_ID1 != "na":
-    EXP_ID = int(EXP_ID1)
+# dbutils.widgets.text("exp_id", defaultValue=str(EXP_ID))
+# EXP_ID1 = dbutils.widgets.get("exp_id")
+# if EXP_ID1 != "na":
+#     EXP_ID = int(EXP_ID1)
 
 
-# TIME_SCALE = dbutils.jobs.taskValues.get(taskKey = "pcc_mul_setup", key = "time_scale", default = 42, debugValue = 0)
+EXP_ID = dbutils.jobs.taskValues.get("pcc_mult_setup", "exp_id", EXP_ID) 
+TIME_SCALE = dbutils.jobs.taskValues.get("pcc_mult_setup", "time_scale", TIME_SCALE)
+BALANCE = dbutils.jobs.taskValues.get("pcc_mult_setup", "balance", BALANCE)
+SAMPLE_TRN = dbutils.jobs.taskValues.get("pcc_mult_setup", "sample_trn", SAMPLE_TRN)
+SAMPLE_TST = dbutils.jobs.taskValues.get("pcc_mult_setup", "sample_tst", SAMPLE_TST)
+TREES = dbutils.jobs.taskValues.get("pcc_mult_setup", "trees", TREES)
+SPLIT_RULES = dbutils.jobs.taskValues.get("pcc_mult_setup", "split_rules", SPLIT_RULE)
+try:
+    SPLIT_RULES = eval(SPLIT_RULES)
+except:
+    SPLIT_RULES = SPLIT_RULES
+
+DRAWS = dbutils.jobs.taskValues.get("pcc_mult_setup", "draws", DRAWS)
+TUNE = dbutils.jobs.taskValues.get("pcc_mult_setup", "tune", TUNE)
+CORES = dbutils.jobs.taskValues.get("pcc_mult_setup", "cores", CORES)
+CHAINS = dbutils.jobs.taskValues.get("pcc_mult_setup", "chains", CHAINS)
+PDP_ALL = dbutils.jobs.taskValues.get("pcc_mult_setup", "pdp_all", PDP_ALL)
+WEIGHT = dbutils.jobs.taskValues.get("pcc_mult_setup", "weight", WEIGHT)
+RUN_NUM = dbutils.jobs.taskValues.get("pcc_mult_setup", "run_num", RUN_NUM)
+
+
+RUN_NAME = "pcc_" + CODE + "_" + str(RUN_NUM)
+
+
+print(RUN_NAME)
+
+
+
 
 # dbutils.widgets.text("time_scale", defaultValue=str(TIME_SCALE))
-TIME_SCALE1 = dbutils.jobs.taskValues.get("pcc_mult_setup", "time_scale", TIME_SCALE)
-if TIME_SCALE1 != "na":
-    TIME_SCALE = float(TIME_SCALE1)
-print(TIME_SCALE)
+# TIME_SCALE1 = dbutils.jobs.taskValues.get("pcc_mult_setup", "time_scale", TIME_SCALE)
+# if TIME_SCALE1 != "na":
+#     TIME_SCALE = float(TIME_SCALE1)
+
 # dbutils.widgets.text("balance", defaultValue=str(BALANCE))
+# dbutils.jobs.taskValue.get("pcc_mult_setup", "balance", defaultValue=BALANCE)
 # BALANCE1 = dbutils.widgets.get("balance")
 # if BALANCE1 != "na":
 #     BALANCE = eval(BALANCE1)
@@ -137,6 +166,7 @@ print(TIME_SCALE)
 # SPLIT_RULES1 = dbutils.widgets.get("split_rules")
 # if SPLIT_RULES1 != "na":
 #     SPLIT_RULES =  eval(SPLIT_RULES1)
+
 
 # dbutils.widgets.text("draws", defaultValue=str(DRAWS))
 # DRAWS1 = dbutils.widgets.get("draws")
@@ -167,6 +197,32 @@ print(TIME_SCALE)
 # WEIGHT1 = dbutils.widgets.get("weight")
 # if WEIGHT1 != "na":
 #     WEIGHT = int(WEIGHT1)
+
+# COMMAND ----------
+
+global_dict = {
+    "EXP_ID":EXP_ID,
+    "RUN_NAME":RUN_NAME,
+    "CODE":CODE,
+    "TIME_SCALE":TIME_SCALE,
+    "BALANCE": BALANCE,
+    "SAMPLE_TRN":SAMPLE_TRN,
+    "SAMPLE_TST":SAMPLE_TST,
+    "SEED":np_seed
+ }
+
+model_dict_main = {
+    "TREES":TREES,
+    "SPLIT_RULES":SPLIT_RULES,
+    "DRAWS":DRAWS,
+    "TUNE":TUNE,
+    "CORES":CORES,
+    "CHAINS":CHAINS,
+    "WEIGHT":WEIGHT
+}
+
+print(global_dict)
+print(model_dict_main)
 
 # COMMAND ----------
 
