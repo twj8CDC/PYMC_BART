@@ -472,6 +472,19 @@ except:
 
 # COMMAND ----------
 
+try:
+    cbsibs_dict = {
+        "exp":cb["obs"].tolist(),
+        "pred":cb["pred"].tolist(),
+        "diff":cb["diff"].tolist(),
+        "qt": cb["qt"].tolist()
+    }
+    ml.log_dict(cbsibs_dict, f"{CODE}_tst_sv_calib.json")
+except:
+    print("Failed to save")
+
+# COMMAND ----------
+
 diff_dict = {}
 for idx,i in enumerate(trn_calib["diff"].mean(0)):
     diff_dict[f"p_{idx+1}"] = np.round(i,3).tolist()
@@ -589,6 +602,19 @@ try:
     ml.log_figure(fig, title)
 except:
     print("No Plot Available")
+
+# COMMAND ----------
+
+try:
+    cbsibs_dict = {
+        "exp":cb["obs"].tolist(),
+        "pred":cb["pred"].tolist(),
+        "diff":cb["diff"].tolist(),
+        "qt": cb["qt"].tolist()
+    }
+    ml.log_dict(cbsibs_dict, f"{CODE}_tst_sv_calib.json")
+except:
+    print("Failed to save")
 
 # COMMAND ----------
 
