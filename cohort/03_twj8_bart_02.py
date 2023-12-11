@@ -1,38 +1,40 @@
 # Databricks notebook source
-# %pip install scikit-survival pymc pymc_experimental matplotlib colorcet pymc_bart lifelines mlflow psutil
+# MAGIC %pip install scikit-survival pymc pymc_experimental matplotlib colorcet pymc_bart lifelines mlflow psutil
 
 # COMMAND ----------
 
 
-# import psutil
-# import os
-# process = psutil.Process(os.getpid())
-# mem_info = process.memory_info()
-# print(f"{mem_info.rss/1_000_000_000} Gb")
-# print(f"{mem_info.vms/1_000_000_000} Gb")
+import psutil
+import os
+
+def mem_chk():
+    process = psutil.Process(os.getpid())
+    mem_info = process.memory_info()
+    print(f"{mem_info.rss/1_000_000_000} Gb")
+    print(f"{mem_info.vms/1_000_000_000} Gb")
 
 # COMMAND ----------
 
-# import pyspark.sql.functions as F
-# import pyspark.sql.window as W
-# from pyspark.storagelevel import StorageLevel
+import pyspark.sql.functions as F
+import pyspark.sql.window as W
+from pyspark.storagelevel import StorageLevel
 
 
-# import sksurv as sks
-# from sksurv import nonparametric
-# import matplotlib.pyplot as plt
+import sksurv as sks
+from sksurv import nonparametric
+import matplotlib.pyplot as plt
 import numpy as np
-# import pandas as pd
+import pandas as pd
 
-# import sys
-# import importlib
-# from pathlib import Path
+import sys
+import importlib
+from pathlib import Path
 
-# from surv_bart_pkg import surv_bart as bmb
-# from surv_bart_pkg import utillities as ut
+from surv_bart_pkg import surv_bart as bmb
+from surv_bart_pkg import utillities as ut
 
-# import mlflow as ml
-# import lifelines as ll
+import mlflow as ml
+import lifelines as ll
 import time
 
 # # importlib.reload(bmb)
@@ -96,17 +98,6 @@ CODE1 = dbutils.widgets.get("code")
 if CODE1 != "na":
     CODE = CODE1
 
-# dbutils.widgets.text("run_name", defaultValue=str(RUN_NAME))
-# RUN_NAME1 = dbutils.widgets.get("run_name")
-# if RUN_NAME1 != "na":
-#     RUN_NAME = RUN_NAME1
-
-# dbutils.widgets.text("exp_id", defaultValue=str(EXP_ID))
-# EXP_ID1 = dbutils.widgets.get("exp_id")
-# if EXP_ID1 != "na":
-#     EXP_ID = int(EXP_ID1)
-
-
 EXP_ID = dbutils.jobs.taskValues.get("pcc_mult_setup", "exp_id", EXP_ID) 
 TIME_SCALE = dbutils.jobs.taskValues.get("pcc_mult_setup", "time_scale", TIME_SCALE)
 BALANCE = dbutils.jobs.taskValues.get("pcc_mult_setup", "balance", BALANCE)
@@ -127,108 +118,14 @@ PDP_ALL = dbutils.jobs.taskValues.get("pcc_mult_setup", "pdp_all", PDP_ALL)
 WEIGHT = dbutils.jobs.taskValues.get("pcc_mult_setup", "weight", WEIGHT)
 RUN_NUM = dbutils.jobs.taskValues.get("pcc_mult_setup", "run_num", RUN_NUM)
 
-
+# Create Run Name
 RUN_NAME = "pcc_" + CODE + "_" + str(RUN_NUM)
-
-
-print(RUN_NAME)
-
-
-
-
-# dbutils.widgets.text("time_scale", defaultValue=str(TIME_SCALE))
-# TIME_SCALE1 = dbutils.jobs.taskValues.get("pcc_mult_setup", "time_scale", TIME_SCALE)
-# if TIME_SCALE1 != "na":
-#     TIME_SCALE = float(TIME_SCALE1)
-
-# dbutils.widgets.text("balance", defaultValue=str(BALANCE))
-# dbutils.jobs.taskValue.get("pcc_mult_setup", "balance", defaultValue=BALANCE)
-# BALANCE1 = dbutils.widgets.get("balance")
-# if BALANCE1 != "na":
-#     BALANCE = eval(BALANCE1)
-
-# dbutils.widgets.text("sample_trn", defaultValue=str(SAMPLE_TRN))
-# SAMPLE_TRN1 = dbutils.widgets.get("sample_trn")
-# if SAMPLE_TRN1 != "na":
-#     SAMPLE_TRN = int(SAMPLE_TRN1)
-
-# dbutils.widgets.text("sample_tst", defaultValue=str(SAMPLE_TST))
-# SAMPLE_TST1 = dbutils.widgets.get("sample_tst")
-# if SAMPLE_TST1 != "na":
-#     SAMPLE_TST = int(SAMPLE_TST1)
-
-# dbutils.widgets.text("trees", defaultValue=str(TREES))
-# TREES1 = dbutils.widgets.get("trees")
-# if TREES1 != "na":
-#     TREES = int(TREES1)
-
-# dbutils.widgets.text("split_rules", defaultValue=str(SPLIT_RULES))
-# SPLIT_RULES1 = dbutils.widgets.get("split_rules")
-# if SPLIT_RULES1 != "na":
-#     SPLIT_RULES =  eval(SPLIT_RULES1)
-
-
-# dbutils.widgets.text("draws", defaultValue=str(DRAWS))
-# DRAWS1 = dbutils.widgets.get("draws")
-# if DRAWS1 != "na":
-#     DRAWS = int(DRAWS1)
-
-# dbutils.widgets.text("tune", defaultValue=str(TUNE))
-# TUNE1 = dbutils.widgets.get("tune")
-# if TUNE1 != "na":
-#     TUNE = int(TUNE1)
-
-# dbutils.widgets.text("cores", defaultValue=str(CORES))
-# CORES1 = dbutils.widgets.get("cores")
-# if CORES1 != "na":
-#     CORES = int(CORES1)
-
-# dbutils.widgets.text("chains", defaultValue=str(CHAINS))
-# CHAINS1 = dbutils.widgets.get("chains")
-# if CHAINS1 != "na":
-#     CHAINS = int(CHAINS1)
-
-# dbutils.widgets.text("pdp_all", defaultValue=str(PDP_ALL))
-# PDP_ALL1 = dbutils.widgets.get("pdp_all")
-# if PDP_ALL1 != "na":
-#     PDP_ALL = eval(PDP_ALL1)
-
-# dbutils.widgets.text("weight", defaultValue=str(WEIGHT))
-# WEIGHT1 = dbutils.widgets.get("weight")
-# if WEIGHT1 != "na":
-#     WEIGHT = int(WEIGHT1)
-
-# COMMAND ----------
-
-global_dict = {
-    "EXP_ID":EXP_ID,
-    "RUN_NAME":RUN_NAME,
-    "CODE":CODE,
-    "TIME_SCALE":TIME_SCALE,
-    "BALANCE": BALANCE,
-    "SAMPLE_TRN":SAMPLE_TRN,
-    "SAMPLE_TST":SAMPLE_TST,
-    "SEED":np_seed
- }
-
-model_dict_main = {
-    "TREES":TREES,
-    "SPLIT_RULES":SPLIT_RULES,
-    "DRAWS":DRAWS,
-    "TUNE":TUNE,
-    "CORES":CORES,
-    "CHAINS":CHAINS,
-    "WEIGHT":WEIGHT
-}
-
-print(global_dict)
-print(model_dict_main)
 
 # COMMAND ----------
 
 # import sys
 # sys.exit(0)
-dbutils.notebook.exit("Stop python to clear memory")
+# dbutils.notebook.exit("Stop python to clear memory")
 
 # COMMAND ----------
 
@@ -290,21 +187,12 @@ print(model_dict_main)
 ccsr_s = spark.table("cdh_premier_exploratory.twj8_pat_ccsr_short_f_06")
 cov = spark.table("cdh_premier_exploratory.twj8_pat_covariates_f_07")
 
-
-
-process = psutil.Process(os.getpid())
-mem_info = process.memory_info()
-print(f"{mem_info.rss/1_000_000_000} Gb")
-print(f"{mem_info.vms/1_000_000_000} Gb")
+mem_chk()
 
 # Get the datasets data
 cc1, cc_name = bmb.get_sk_sp(ccsr_s, cov, CODE)
 
-
-process = psutil.Process(os.getpid())
-mem_info = process.memory_info()
-print(f"{mem_info.rss/1_000_000_000} Gb")
-print(f"{mem_info.vms/1_000_000_000} Gb")
+mem_chk()
 
 
 # COMMAND ----------
@@ -339,13 +227,7 @@ for i in range(0,17):
 cc1 = tmp
 del tmp
 
-# COMMAND ----------
-
-process = psutil.Process(os.getpid())
-mem_info = process.memory_info()
-print(f"{mem_info.rss/1_000_000_000} Gb")
-print(f"{mem_info.vms/1_000_000_000} Gb")
-
+mem_chk()
 
 # COMMAND ----------
 
@@ -353,13 +235,7 @@ print(f"{mem_info.vms/1_000_000_000} Gb")
 t_event_scale = bmb.get_time_transform(cc1[:,1], time_scale=TIME_SCALE)
 y_sk = bmb.get_y_sklearn(cc1[:,0], t_event_scale)
 
-# COMMAND ----------
-
-process = psutil.Process(os.getpid())
-mem_info = process.memory_info()
-print(f"{mem_info.rss/1_000_000_000} Gb")
-print(f"{mem_info.vms/1_000_000_000} Gb")
-
+mem_chk()
 
 # COMMAND ----------
 
@@ -384,13 +260,7 @@ counts_dict = {
 }
 ml.log_dict(counts_dict, f"{CODE}_samples_counts.json")
 
-
-# COMMAND ----------
-
-process = psutil.Process(os.getpid())
-mem_info = process.memory_info()
-print(f"{mem_info.rss/1_000_000_000} Gb")
-print(f"{mem_info.vms/1_000_000_000} Gb")
+mem_chk()
 
 # COMMAND ----------
 
@@ -432,10 +302,7 @@ post = bart_model.sample_posterior_predictive(trn["x_tst"], trn["tst_coords"], e
 
 # COMMAND ----------
 
-process = psutil.Process(os.getpid())
-mem_info = process.memory_info()
-print(f"{mem_info.rss/1_000_000_000} Gb")
-print(f"{mem_info.vms/1_000_000_000} Gb")
+mem_chk()
 
 # COMMAND ----------
 
@@ -533,13 +400,14 @@ except:
 # COMMAND ----------
 
 try:
-    cbsibs_dict = {
+    cb_dict = {
         "exp":cb["obs"].tolist(),
         "pred":cb["pred"].tolist(),
         "diff":cb["diff"].tolist(),
         "qt": cb["qt"].tolist()
     }
-    ml.log_dict(cbsibs_dict, f"{CODE}_tst_sv_calib.json")
+    print(cb_dict)
+    ml.log_dict(cb_dict, f"{CODE}_tst_sv_calib.json")
 except:
     print("Failed to save")
 
@@ -555,18 +423,12 @@ ml.log_dict(diff_dict, f"{CODE}_trn_sv_calib_diff_time_rnk.json")
 # COMMAND ----------
 
 # clear  trn_val
-process = psutil.Process(os.getpid())
-mem_info = process.memory_info()
-print(f"{mem_info.rss/1_000_000_000} Gb")
-print(f"{mem_info.vms/1_000_000_000} Gb")
+mem_chk()
 
 del trn_val
 del post
 
-process = psutil.Process(os.getpid())
-mem_info = process.memory_info()
-print(f"{mem_info.rss/1_000_000_000} Gb")
-print(f"{mem_info.vms/1_000_000_000} Gb")
+mem_chk()
 
 # COMMAND ----------
 
@@ -666,13 +528,14 @@ except:
 # COMMAND ----------
 
 try:
-    cbsibs_dict = {
+    cb_dict = {
         "exp":cb["obs"].tolist(),
         "pred":cb["pred"].tolist(),
         "diff":cb["diff"].tolist(),
         "qt": cb["qt"].tolist()
     }
-    ml.log_dict(cbsibs_dict, f"{CODE}_tst_sv_calib.json")
+    print(cb_dict)
+    ml.log_dict(cb_dict, f"{CODE}_tst_sv_calib.json")
 except:
     print("Failed to save")
 
@@ -688,18 +551,10 @@ ml.log_dict(diff_dict, f"{CODE}_tst_sv_calib_diff_time_rnk.json")
 # COMMAND ----------
 
 # drop tst_val
-process = psutil.Process(os.getpid())
-mem_info = process.memory_info()
-print(f"{mem_info.rss/1_000_000_000} Gb")
-print(f"{mem_info.vms/1_000_000_000} Gb")
-
+mem_chk()
 del tst_val
 del tst_post
-
-process = psutil.Process(os.getpid())
-mem_info = process.memory_info()
-print(f"{mem_info.rss/1_000_000_000} Gb")
-print(f"{mem_info.vms/1_000_000_000} Gb")
+mem_chk()
 
 # COMMAND ----------
 
@@ -788,18 +643,12 @@ out
 # COMMAND ----------
 
 # drop cov pdp
-process = psutil.Process(os.getpid())
-mem_info = process.memory_info()
-print(f"{mem_info.rss/1_000_000_000} Gb")
-print(f"{mem_info.vms/1_000_000_000} Gb")
+mem_chk()
 
 del trn_cov_pdp
 del tst_cov_pdp
 
-process = psutil.Process(os.getpid())
-mem_info = process.memory_info()
-print(f"{mem_info.rss/1_000_000_000} Gb")
-print(f"{mem_info.vms/1_000_000_000} Gb")
+mem_check
 
 # COMMAND ----------
 
@@ -841,26 +690,8 @@ if PDP_ALL:
     ml.log_dict(pdp_summ, f"{CODE}_all_pdp_sample_summary.json")
     del pdp_summ
     del pdp_dict
+    mem_chk()
 
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
-# process = psutil.Process(os.getpid())
-# mem_info = process.memory_info()
-# print(f"{mem_info.rss/1_000_000_000} Gb")
-# print(f"{mem_info.vms/1_000_000_000} Gb")
-
-# del trn
-# del tst
-
-# process = psutil.Process(os.getpid())
-# mem_info = process.memory_info()
-# print(f"{mem_info.rss/1_000_000_000} Gb")
-# print(f"{mem_info.vms/1_000_000_000} Gb")
 
 # COMMAND ----------
 
@@ -875,19 +706,11 @@ trn_idx = trn["idx"]["sample_idx"]
 tst_idx = tst["idx_test"]
 
 # drop the other large memory items
-process = psutil.Process(os.getpid())
-mem_info = process.memory_info()
-print(f"{mem_info.rss/1_000_000_000} Gb")
-print(f"{mem_info.vms/1_000_000_000} Gb")
-
+mem_chk()
 del trn
 del tst 
-
-
-process = psutil.Process(os.getpid())
-mem_info = process.memory_info()
-print(f"{mem_info.rss/1_000_000_000} Gb")
-print(f"{mem_info.vms/1_000_000_000} Gb")
+del bart_model
+mem_chk()
 
 # COMMAND ----------
 
@@ -903,10 +726,7 @@ tmp_tst = pd.get_dummies(pd.DataFrame(tmp_tst, columns=cc_name), columns=["pat_t
 
 # COMMAND ----------
 
-process = psutil.Process(os.getpid())
-mem_info = process.memory_info()
-print(f"{mem_info.rss/1_000_000_000} Gb")
-print(f"{mem_info.vms/1_000_000_000} Gb")
+mem_chk
 
 # COMMAND ----------
 
@@ -958,18 +778,12 @@ ml.log_dict({"cindex":c.concordance_index_}, f"{CODE}_trn_cph_cindex.json")
 
 # COMMAND ----------
 
-process = psutil.Process(os.getpid())
-mem_info = process.memory_info()
-print(f"{mem_info.rss/1_000_000_000} Gb")
-print(f"{mem_info.vms/1_000_000_000} Gb")
+mem_chk()
 
 del tmp
 del tmp_tst
 
-process = psutil.Process(os.getpid())
-mem_info = process.memory_info()
-print(f"{mem_info.rss/1_000_000_000} Gb")
-print(f"{mem_info.vms/1_000_000_000} Gb")
+mem_chk()
 
 # COMMAND ----------
 
@@ -979,7 +793,6 @@ cc1 = pd.get_dummies(pd.DataFrame(cc1, columns=cc_name), columns=["pat_type", "s
 
 # tmp = cc1
 # cc1 = pd.get_dummies(pd.DataFrame(cc1, columns=cc_name), columns=["pat_type", "std_payor", "ms_drg", "race", "hispanic_ind", "i_o_ind"], drop_first=True, dtype="int")
-
 # cph = ll.CoxPHFitter(penalizer=0.0001)
 # c2 = cph.fit(cc1, 
 #              event_col = "ccsr_ind_p3", 
@@ -1007,4 +820,4 @@ ml.end_run()
 
 # COMMAND ----------
 
-dbutils.notebook.exit("Stop ptyhon to clear memory")
+dbutils.notebook.exit("Stop python to clear memory")
