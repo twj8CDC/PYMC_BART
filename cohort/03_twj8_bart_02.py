@@ -113,7 +113,7 @@ BALANCE = dbutils.jobs.taskValues.get("pcc_mult_setup", "balance", BALANCE)
 SAMPLE_TRN = dbutils.jobs.taskValues.get("pcc_mult_setup", "sample_trn", SAMPLE_TRN)
 SAMPLE_TST = dbutils.jobs.taskValues.get("pcc_mult_setup", "sample_tst", SAMPLE_TST)
 TREES = dbutils.jobs.taskValues.get("pcc_mult_setup", "trees", TREES)
-SPLIT_RULES = dbutils.jobs.taskValues.get("pcc_mult_setup", "split_rules", SPLIT_RULE)
+SPLIT_RULES = dbutils.jobs.taskValues.get("pcc_mult_setup", "split_rules", SPLIT_RULES)
 try:
     SPLIT_RULES = eval(SPLIT_RULES)
 except:
