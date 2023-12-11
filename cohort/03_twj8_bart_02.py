@@ -21,7 +21,7 @@
 # import sksurv as sks
 # from sksurv import nonparametric
 # import matplotlib.pyplot as plt
-# import numpy as np
+import numpy as np
 # import pandas as pd
 
 # import sys
@@ -33,11 +33,11 @@
 
 # import mlflow as ml
 # import lifelines as ll
-# import time
+import time
 
 # # importlib.reload(bmb)
-# # Set Seed
-# np_seed = int(np.ceil(time.time()))
+# Set Seed
+np_seed = int(np.ceil(time.time()))
 
 # COMMAND ----------
 
