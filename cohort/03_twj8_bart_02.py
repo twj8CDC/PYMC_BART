@@ -1,43 +1,43 @@
 # Databricks notebook source
-# MAGIC %pip install scikit-survival pymc pymc_experimental matplotlib colorcet pymc_bart lifelines mlflow psutil
+# %pip install scikit-survival pymc pymc_experimental matplotlib colorcet pymc_bart lifelines mlflow psutil
 
 # COMMAND ----------
 
 
-import psutil
-import os
-process = psutil.Process(os.getpid())
-mem_info = process.memory_info()
-print(f"{mem_info.rss/1_000_000_000} Gb")
-print(f"{mem_info.vms/1_000_000_000} Gb")
+# import psutil
+# import os
+# process = psutil.Process(os.getpid())
+# mem_info = process.memory_info()
+# print(f"{mem_info.rss/1_000_000_000} Gb")
+# print(f"{mem_info.vms/1_000_000_000} Gb")
 
 # COMMAND ----------
 
-import pyspark.sql.functions as F
-import pyspark.sql.window as W
-from pyspark.storagelevel import StorageLevel
+# import pyspark.sql.functions as F
+# import pyspark.sql.window as W
+# from pyspark.storagelevel import StorageLevel
 
 
-import sksurv as sks
-from sksurv import nonparametric
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
+# import sksurv as sks
+# from sksurv import nonparametric
+# import matplotlib.pyplot as plt
+# import numpy as np
+# import pandas as pd
 
-import sys
-import importlib
-from pathlib import Path
+# import sys
+# import importlib
+# from pathlib import Path
 
-from surv_bart_pkg import surv_bart as bmb
-from surv_bart_pkg import utillities as ut
+# from surv_bart_pkg import surv_bart as bmb
+# from surv_bart_pkg import utillities as ut
 
-import mlflow as ml
-import lifelines as ll
-import time
+# import mlflow as ml
+# import lifelines as ll
+# import time
 
-# importlib.reload(bmb)
-# Set Seed
-np_seed = int(np.ceil(time.time()))
+# # importlib.reload(bmb)
+# # Set Seed
+# np_seed = int(np.ceil(time.time()))
 
 # COMMAND ----------
 
@@ -105,70 +105,74 @@ EXP_ID1 = dbutils.widgets.get("exp_id")
 if EXP_ID1 != "na":
     EXP_ID = int(EXP_ID1)
 
-dbutils.widgets.text("time_scale", defaultValue=str(TIME_SCALE))
-TIME_SCALE1 = dbutils.widgets.get("time_scale")
+
+# TIME_SCALE = dbutils.jobs.taskValues.get(taskKey = "pcc_mul_setup", key = "time_scale", default = 42, debugValue = 0)
+
+# dbutils.widgets.text("time_scale", defaultValue=str(TIME_SCALE))
+TIME_SCALE1 = dbutils.widgets.get("pcc_mult_setup", "time_scale", TIME_SCALE)
 if TIME_SCALE1 != "na":
     TIME_SCALE = float(TIME_SCALE1)
+print(TIME_SCALE)
+# dbutils.widgets.text("balance", defaultValue=str(BALANCE))
+# BALANCE1 = dbutils.widgets.get("balance")
+# if BALANCE1 != "na":
+#     BALANCE = eval(BALANCE1)
 
-dbutils.widgets.text("balance", defaultValue=str(BALANCE))
-BALANCE1 = dbutils.widgets.get("balance")
-if BALANCE1 != "na":
-    BALANCE = eval(BALANCE1)
+# dbutils.widgets.text("sample_trn", defaultValue=str(SAMPLE_TRN))
+# SAMPLE_TRN1 = dbutils.widgets.get("sample_trn")
+# if SAMPLE_TRN1 != "na":
+#     SAMPLE_TRN = int(SAMPLE_TRN1)
 
-dbutils.widgets.text("sample_trn", defaultValue=str(SAMPLE_TRN))
-SAMPLE_TRN1 = dbutils.widgets.get("sample_trn")
-if SAMPLE_TRN1 != "na":
-    SAMPLE_TRN = int(SAMPLE_TRN1)
+# dbutils.widgets.text("sample_tst", defaultValue=str(SAMPLE_TST))
+# SAMPLE_TST1 = dbutils.widgets.get("sample_tst")
+# if SAMPLE_TST1 != "na":
+#     SAMPLE_TST = int(SAMPLE_TST1)
 
-dbutils.widgets.text("sample_tst", defaultValue=str(SAMPLE_TST))
-SAMPLE_TST1 = dbutils.widgets.get("sample_tst")
-if SAMPLE_TST1 != "na":
-    SAMPLE_TST = int(SAMPLE_TST1)
+# dbutils.widgets.text("trees", defaultValue=str(TREES))
+# TREES1 = dbutils.widgets.get("trees")
+# if TREES1 != "na":
+#     TREES = int(TREES1)
 
-dbutils.widgets.text("trees", defaultValue=str(TREES))
-TREES1 = dbutils.widgets.get("trees")
-if TREES1 != "na":
-    TREES = int(TREES1)
+# dbutils.widgets.text("split_rules", defaultValue=str(SPLIT_RULES))
+# SPLIT_RULES1 = dbutils.widgets.get("split_rules")
+# if SPLIT_RULES1 != "na":
+#     SPLIT_RULES =  eval(SPLIT_RULES1)
 
-dbutils.widgets.text("split_rules", defaultValue=str(SPLIT_RULES))
-SPLIT_RULES1 = dbutils.widgets.get("split_rules")
-if SPLIT_RULES1 != "na":
-    SPLIT_RULES =  eval(SPLIT_RULES1)
+# dbutils.widgets.text("draws", defaultValue=str(DRAWS))
+# DRAWS1 = dbutils.widgets.get("draws")
+# if DRAWS1 != "na":
+#     DRAWS = int(DRAWS1)
 
-dbutils.widgets.text("draws", defaultValue=str(DRAWS))
-DRAWS1 = dbutils.widgets.get("draws")
-if DRAWS1 != "na":
-    DRAWS = int(DRAWS1)
+# dbutils.widgets.text("tune", defaultValue=str(TUNE))
+# TUNE1 = dbutils.widgets.get("tune")
+# if TUNE1 != "na":
+#     TUNE = int(TUNE1)
 
-dbutils.widgets.text("tune", defaultValue=str(TUNE))
-TUNE1 = dbutils.widgets.get("tune")
-if TUNE1 != "na":
-    TUNE = int(TUNE1)
+# dbutils.widgets.text("cores", defaultValue=str(CORES))
+# CORES1 = dbutils.widgets.get("cores")
+# if CORES1 != "na":
+#     CORES = int(CORES1)
 
-dbutils.widgets.text("cores", defaultValue=str(CORES))
-CORES1 = dbutils.widgets.get("cores")
-if CORES1 != "na":
-    CORES = int(CORES1)
+# dbutils.widgets.text("chains", defaultValue=str(CHAINS))
+# CHAINS1 = dbutils.widgets.get("chains")
+# if CHAINS1 != "na":
+#     CHAINS = int(CHAINS1)
 
-dbutils.widgets.text("chains", defaultValue=str(CHAINS))
-CHAINS1 = dbutils.widgets.get("chains")
-if CHAINS1 != "na":
-    CHAINS = int(CHAINS1)
+# dbutils.widgets.text("pdp_all", defaultValue=str(PDP_ALL))
+# PDP_ALL1 = dbutils.widgets.get("pdp_all")
+# if PDP_ALL1 != "na":
+#     PDP_ALL = eval(PDP_ALL1)
 
-dbutils.widgets.text("pdp_all", defaultValue=str(PDP_ALL))
-PDP_ALL1 = dbutils.widgets.get("pdp_all")
-if PDP_ALL1 != "na":
-    PDP_ALL = eval(PDP_ALL1)
-
-dbutils.widgets.text("weight", defaultValue=str(WEIGHT))
-WEIGHT1 = dbutils.widgets.get("weight")
-if WEIGHT1 != "na":
-    WEIGHT = int(WEIGHT1)
+# dbutils.widgets.text("weight", defaultValue=str(WEIGHT))
+# WEIGHT1 = dbutils.widgets.get("weight")
+# if WEIGHT1 != "na":
+#     WEIGHT = int(WEIGHT1)
 
 # COMMAND ----------
 
 # import sys
 # sys.exit(0)
+dbutils.notebook.exit("Stop python to clear memory")
 
 # COMMAND ----------
 
