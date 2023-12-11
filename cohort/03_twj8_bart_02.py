@@ -839,6 +839,7 @@ ml.end_run()
 
 # COMMAND ----------
 
+import gc
 gc.collect()
 
 # COMMAND ----------
