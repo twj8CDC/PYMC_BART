@@ -405,7 +405,7 @@ try:
         "diff":cb["diff"].tolist(),
         "qt": cb["qtile"].tolist()
     }
-    ml.log_dict(cb_dict, f"{CODE}_tst_sv_calib.json")
+    ml.log_dict(cb_dict, f"{CODE}_trn_sv_calib.json")
     print(cb_dict)  
 except:
     print("Failed to save")
