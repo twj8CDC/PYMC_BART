@@ -862,7 +862,7 @@ c2.print_summary()
 # COMMAND ----------
 
 ml.log_dict(c2.summary.T.to_dict(), f"{CODE}_all_cph_result.json")
-ml.log_dict({"cindex":c.concordance_index_}, f"{CODE}_all_cph_cindex.json")
+ml.log_dict({"cindex":c2.concordance_index_}, f"{CODE}_all_cph_cindex.json")
 
 # COMMAND ----------
 

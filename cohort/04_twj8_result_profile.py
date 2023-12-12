@@ -5,6 +5,7 @@
 
 import mlflow as ml
 import pandas as pd
+import numpy as np
 
 # COMMAND ----------
 
@@ -76,13 +77,39 @@ artf = get_artifacts(runs1)
 
 # COMMAND ----------
 
-pd.DataFrame(artf["tst_sv_ci_bs"]).T
-pd.DataFrame(artf["trn_sv_ci_bs"]).T
-pd.DataFrame(artf["all_cph_cindex"]).T
-pd.DataFrame(artf["trn_cph_cindex"]).T
+p1 = pd.DataFrame(artf["tst_sv_ci_bs"]).T.add_prefix("tst_")
+p2 = pd.DataFrame(artf["trn_sv_ci_bs"]).T.add_prefix("trn_")
+p3 = pd.DataFrame(artf["all_cph_cindex"]).T. add_prefix("cph_all_")
+p4 = pd.DataFrame(artf["trn_cph_cindex"]).T.add_prefix("cph_trn_")
 #
-pd.DataFrame(artf["tst_sv_calib"]).T
+p5 = pd.DataFrame(artf["tst_sv_calib"]).T.add_prefix("tst_")
+p6 = pd.DataFrame(artf["cph_trn_sv_calib"]).T.add_prefix("cph_trn_")
+p7 = pd.DataFrame(artf["cph_tst_sv_calib"]).T.add_prefix("cph_tst_")
 
+metrics = p1.join(p2).join(p3).join(p4).join(p5).join(p6).join(p7)
+
+metrics2 = metrics.drop(["tst_bs", 
+              "trn_bs", 
+              "tst_exp", 
+              "tst_pred", 
+              "tst_qt", 
+              "cph_trn_exp",
+              "cph_trn_pred",
+              "cph_trn_qt",
+              "cph_tst_exp",
+              "cph_tst_pred",
+              "cph_tst_qt"
+              ], axis=1)
+
+# get abs sum of diff
+for i in ["tst_diff", "cph_tst_diff", "cph_trn_diff"]:
+    metrics2[i] = metrics2[i].apply(lambda x: np.abs(x).sum())
+ 
+
+# COMMAND ----------
+
+
+metrics2
 
 # COMMAND ----------
 
