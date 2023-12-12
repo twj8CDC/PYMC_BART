@@ -679,36 +679,39 @@ mem_chk()
 
 # get all pdps
 if PDP_ALL:
-    pdp_dict = {}
-    pdp_summ = {}
-    for v in var_dict:
-        uniq = np.unique(tst["x_sk_coh"][:,v[1]], return_counts=True)
-        if len(uniq[0]) <= 4:
-            vq = uniq[0][np.argsort(-uniq[1])][0:2]
-        else:
-            vq = uniq[0][0:2]
-        pdp = bmb.pdp_eval(trn["x_sk_coh"], 
-                        bart_model=bart_model,
-                        var_col = [v[1]], 
-                        values = [vq], 
-                        var_name=v[0], 
-                        sample_n=1000, 
-                        uniq_times=bart_model.uniq_times
-                        )
-        pdp_dict[v[0]] = [pdp["pdp_diff"], pdp["pdp_rr"]]
-        pdp_summ[v[0]] = {
-            "val": [int(vq[0]),int(vq[1])],
-            "diff_m": np.round(pdp["pdp_diff"]["diff_m"].mean(),3).tolist(),
-            "diff_ql": np.round(pdp["pdp_diff"]["diff_q"].mean(1)[0],3).tolist(),
-            "diff_qh": np.round(pdp["pdp_diff"]["diff_q"].mean(1)[1],3).tolist(),
-            "rr_m": np.round(pdp["pdp_rr"]["rr_m"].mean(),3).tolist(),
-            "rr_ql": np.round(pdp["pdp_rr"]["rr_q"].mean(1)[0],3).tolist(),
-            "rr_qh": np.round(pdp["pdp_rr"]["rr_q"].mean(1)[1],3).tolist()
-        }
-        del pdp
-    ml.log_dict(pdp_summ, f"{CODE}_all_pdp_sample_summary.json")
-    del pdp_summ
-    del pdp_dict
+    try:
+        pdp_dict = {}
+        pdp_summ = {}
+        for v in var_dict:
+            uniq = np.unique(tst["x_sk_coh"][:,v[1]], return_counts=True)
+            if len(uniq[0]) <= 4:
+                vq = uniq[0][np.argsort(-uniq[1])][0:2]
+            else:
+                vq = uniq[0][0:2]
+            pdp = bmb.pdp_eval(trn["x_sk_coh"], 
+                            bart_model=bart_model,
+                            var_col = [v[1]], 
+                            values = [vq], 
+                            var_name=v[0], 
+                            sample_n=1000, 
+                            uniq_times=bart_model.uniq_times
+                            )
+            pdp_dict[v[0]] = [pdp["pdp_diff"], pdp["pdp_rr"]]
+            pdp_summ[v[0]] = {
+                "val": [int(vq[0]),int(vq[1])],
+                "diff_m": np.round(pdp["pdp_diff"]["diff_m"].mean(),3).tolist(),
+                "diff_ql": np.round(pdp["pdp_diff"]["diff_q"].mean(1)[0],3).tolist(),
+                "diff_qh": np.round(pdp["pdp_diff"]["diff_q"].mean(1)[1],3).tolist(),
+                "rr_m": np.round(pdp["pdp_rr"]["rr_m"].mean(),3).tolist(),
+                "rr_ql": np.round(pdp["pdp_rr"]["rr_q"].mean(1)[0],3).tolist(),
+                "rr_qh": np.round(pdp["pdp_rr"]["rr_q"].mean(1)[1],3).tolist()
+            }
+            del pdp
+        ml.log_dict(pdp_summ, f"{CODE}_all_pdp_sample_summary.json")
+        del pdp_summ
+        del pdp_dict
+    except:
+        print("Error in pdp all")
     mem_chk()
 
 
