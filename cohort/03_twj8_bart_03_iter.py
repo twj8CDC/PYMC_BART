@@ -617,11 +617,6 @@ tst_cov_pdp = bmb.pdp_eval(
 
 # COMMAND ----------
 
-np.quantile(x3[:,3], [0.025,0.975])
-
-
-# COMMAND ----------
-
 x = trn_cov_pdp["pdp_val"]["prob"][:,SAMPLE_TRN:,:]/trn_cov_pdp["pdp_val"]["prob"][:,:SAMPLE_TRN,:]
 x2 = np.quantile(x, [0.25, 0.5, 0.75], 1)
 x3 = x.mean(1)
