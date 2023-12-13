@@ -83,6 +83,7 @@ CHAINS = 4
 PDP_ALL = True
 WEIGHT = 1
 RUN_NUM = 1
+MOD = "tst"
 
 
 
@@ -121,9 +122,10 @@ CORES = get_param("cores", CORES, "int")
 CHAINS = get_param("chains", CHAINS, "int")
 RUN_NUM = get_param("run_num", RUN_NUM, "int")
 PDP_ALL = get_param("pdp_all", PDP_ALL, "bool")
+MOD = get_param("mod", MOD, "str")
 WEIGHT = get_param("weight", WEIGHT, "int")
 
-RUN_NAME = "pcc_" + CODE + "_" + str(RUN_NUM)
+RUN_NAME = "pcc_" + CODE + "_" + MOD + "_" + str(RUN_NUM)
 
 # COMMAND ----------
 
@@ -155,7 +157,8 @@ global_dict = {
     "BALANCE": BALANCE,
     "SAMPLE_TRN":SAMPLE_TRN,
     "SAMPLE_TST":SAMPLE_TST,
-    "SEED":np_seed
+    "SEED":np_seed,
+    "MOD":MOD
  }
 
 model_dict_main = {
