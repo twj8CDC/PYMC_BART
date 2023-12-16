@@ -628,13 +628,6 @@ ml.log_figure(fig, title)
 
 # COMMAND ----------
 
-trn_cov_pdp["pdp_val"]["prob"
-
-# np.quantile(pdp_rr.mean(2).mean(1), [0.025, 0.975])
-# np.quantile(pdp_rr.mean(2).mean(1), [0.055, 0.945])
-
-# COMMAND ----------
-
 pdp_rr = trn_cov_pdp["pdp_val"]["prob"][:,SAMPLE_TRN:,:]/trn_cov_pdp["pdp_val"]["prob"][:,:SAMPLE_TRN,:]
 
 
