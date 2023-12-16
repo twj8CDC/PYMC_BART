@@ -123,6 +123,18 @@ import matplotlib.pyplot as plt
 
 # COMMAND ----------
 
+cir_m
+
+# COMMAND ----------
+
+cir_m = metrics2.loc["CIR"]
+plt.plot([1], cir_m["trn_ci"], 'o', label = "BART")
+plt.plot([1], cir_m["cph_trn_cindex"], 'o', label = "CPH")
+plt.legend()
+
+
+# COMMAND ----------
+
 # plot
 fig,ax = plt.subplots(1, figsize=(10,10))
 ax.plot(metrics2.index, metrics2.tst_ci, label = "tst_bart")
@@ -208,6 +220,60 @@ res_rr["cph_all_sig"] = res_rr["cph_all_p"].apply(lambda x: 2.9 if x < 0.05 else
 
 # COMMAND ----------
 
+cir_hr = pd.DataFrame(res_rr.loc["CIR"]).T
+cir_hr
+
+# COMMAND ----------
+
+def plot_rr(res_rr):
+    ind = res_rr.index.to_list()
+    print(ind)
+    inds = np.arange(1,len(ind)+1)
+    print(inds)
+    fig,ax = plt.subplots(1, figsize=(4,4))
+    # ax.plot(ind, res_rr.bart_rr_m)
+    ax.errorbar(y = inds, 
+                x = res_rr.bart_rr_m,
+                xerr = (
+                    res_rr.bart_rr_m - res_rr.bart_rr_l,
+                    res_rr.bart_rr_u - res_rr.bart_rr_m
+                ),
+                fmt = "o",
+                label = "bart"
+                )
+    ax.errorbar(y = inds + 0.02, 
+                x = res_rr["cph_all_exp(coef)"],
+                xerr = (
+                    res_rr["cph_all_exp(coef)"] - res_rr["cph_all_exp(coef) lower 95%"],
+                    res_rr["cph_all_exp(coef) upper 95%"] - res_rr["cph_all_exp(coef)"], 
+                ),
+                fmt = "o",
+                label = "cph_all"
+                )
+    ax.errorbar(y =inds + .01, 
+                x = res_rr["cph_trn_exp(coef)"],
+                xerr = (
+                    res_rr["cph_trn_exp(coef)"] - res_rr["cph_trn_exp(coef) lower 95%"],
+                    res_rr["cph_trn_exp(coef) upper 95%"] - res_rr["cph_trn_exp(coef)"], 
+                ),
+                alpha=0.5,
+                fmt = "o",
+                label = "cph_trn"
+                )
+    ax.plot(res_rr["cph_trn_sig"], inds+.01, "*", color = "green")
+    ax.plot(res_rr["cph_all_sig"], inds+.02, "*", color = "darkorange")
+    ax.set_yticks(inds)
+    ax.set_yticklabels("")
+    # ax.plot(np.repeat(1,len(inds)), inds, "--")
+    ax.axvline(1, linestyle= "--", color="red")
+    ax.legend()
+    ax.set_title("Hazard Ratios COVID Condition (CIR)")
+    ax.set_xlabel("HR")
+
+plot_rr(cir_hr)
+
+# COMMAND ----------
+
 res_rr.columns
 
 # COMMAND ----------
@@ -227,7 +293,7 @@ ax.errorbar(y = inds,
             fmt = "o",
             label = "bart"
             )
-ax.errorbar(y = inds + .11, 
+ax.errorbar(y = inds - .2, 
             x = res_rr["cph_all_exp(coef)"],
             xerr = (
                 res_rr["cph_all_exp(coef)"] - res_rr["cph_all_exp(coef) lower 95%"],
@@ -236,20 +302,23 @@ ax.errorbar(y = inds + .11,
             fmt = "o",
             label = "cph_all"
             )
-ax.errorbar(y =inds + .15, 
+ax.errorbar(y =inds + .2, 
             x = res_rr["cph_trn_exp(coef)"],
             xerr = (
                 res_rr["cph_trn_exp(coef)"] - res_rr["cph_trn_exp(coef) lower 95%"],
                 res_rr["cph_trn_exp(coef) upper 95%"] - res_rr["cph_trn_exp(coef)"], 
             ),
             fmt = "o",
-            label = "cph_trn"
+            label = "cph_trn",
+            color = "green",
+            alpha=0.5
             )
 ax.plot(res_rr["cph_trn_sig"], inds+.1, "*", color = "green")
 ax.plot(res_rr["cph_all_sig"], inds+.1, "*", color = "darkorange")
 ax.set_yticks(inds)
 ax.set_yticklabels(ind)
-ax.plot(np.repeat(1,len(inds)), inds, "--")
+# ax.plot(np.repeat(1,len(inds)), inds, "--")
+ax.axvline(1, linestyle="--", color="red")
 ax.legend()
 ax.set_title("Hazard Ratios COVID Condition")
 ax.set_xlabel("HR")
@@ -452,3 +521,105 @@ ax.set_xticklabels(idx, rotation=90)
 ax.set_ylim(0,5)
 ax.set_yticks(np.arange(0,5,.5))
 ax.grid(alpha=0.2)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Plot for presentation
+
+# COMMAND ----------
+
+x = np.random.uniform(0,10,100)
+e = np.random.uniform(-.7,.7,100)
+y = np.power(1.5*x, 1.5) + e
+
+plt.plot(x,y, "o")
+plt.xlabel("x1")
+plt.ylabel("y")
+
+def get_split(x,y,splt, col = "blue", lab = "split1", l = True, h = True):
+    xl = x[x<splt]
+    xh = x[x>=splt]
+    yl = y[x<splt]
+    yh = y[x>=splt]
+    ml = yl.mean()
+    mh = yh.mean()
+    plt.vlines(splt, 0, 60, color = col, label = lab)
+    if l:
+        plt.hlines(ml, 0, splt, color = col)
+    if h:
+        # plt.vlines(splt, 0, mh, color = col)
+        plt.hlines(mh, splt, 10, color = col)
+    print(ml, mh)
+    return ml, mh, xl, xh, yl, yh
+
+# ml, mh, xl, xh, yl, yh = get_split(x,y,4, l= True, h = False)
+# ml, mh, xl, xh, yl, yh = get_split(xh,yh,8, 'red', "split2", l = False, h = True)
+# ml, mh, xl, xh, yl, yh = get_split(xl,yl,6, "green", "split3", l= True, h = True)
+
+# ml, mh, xl, xh, yl, yh = get_split(x,y, 2, l= True, h = False)
+# ml, mh, xl, xh, yl, yh = get_split(xh, yh,5, 'red', "split2", l = True, h = True)
+# ml, mh, xl, xh, yl, yh = get_split(xl,yl,6, "green", "split3", l= True, h = True)
+
+ml, mh, xl, xh, yl, yh = get_split(x,y, 8, l= False, h = True)
+ml, mh, xl, xh, yl, yh = get_split(xl, yl,3, 'red', "split2", l = True, h = True)
+
+
+plt.legend()
+# print(ml,mh)
+
+
+# COMMAND ----------
+
+# BART WORKFLOW EXAMPLE
+# # Bin and Scale
+# bmb.get_time_transform()
+# bmb.get_y_sklearn()
+# # Prepare Cohort
+# bmb.get_coh()
+# # Train Model
+# bmb.BartSurvModel().fit()
+# # Predict
+# bart_model.sample_posterior_predictive()
+# # Marginal Dpendence (HR and Survival Difference)
+# bmb.pdp_eval()
+
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Show cohort demographics and CCSR
+
+# COMMAND ----------
+
+import pyspark.sql.functions as F
+import pyspark.sql.window as W
+
+# COMMAND ----------
+
+ccsr_lookup = spark.table("cdh_reference_data.icd10cm_diagnosis_codes_to_ccsr_categories_map")
+ccsr_lookup.display()
+
+(
+    ccsr_lookup
+    .select("ccsr_category", "ccsr_category_description")
+    .withColumn("ccsr_s", F.substring(F.col("ccsr_category"),0,3))
+    .select("ccsr_s", "ccsr_category_description")
+    .distinct()
+).display()
+
+# COMMAND ----------
+
+ccsr_s = spark.table("cdh_premier_exploratory.twj8_pat_ccsr_short_f_06")
+cov = spark.table("cdh_premier_exploratory.twj8_pat_covariates_f_06")
+
+# COMMAND ----------
+
+ccsr_s.display()
+
+# COMMAND ----------
+
+import numpy as np
+n = np.array([[[1,1,1],[2,2,2]],[[3,3,3],[4,4,4]], [[5,5,5],[6,6,6]]])
+n.reshape(3*2,3)
+# n

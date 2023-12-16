@@ -481,12 +481,12 @@ def get_pdp(x_sk, var_col, values=[], qt=[0.25,0.5,0.75], sample_n=None):
 # New functions
 ######################################################################
 # get the dataset for specific code
-def get_sk_sp(df, cov, code):
-    df_code = df.filter(F.col("code_sm") == code)
+def get_sk_sp(df, cov, code, code_type = "code_sm"):
+    df_code = df.filter(F.col(code_type) == code)
     mg = (
         df_code
         .join(cov, on="medrec_key", how="left")
-        .drop("medrec_key", "code_sm")
+        .drop("medrec_key", code_type)
         .withColumn("ccsr_tt_p3", F.col("ccsr_tt_p3")-30) # adjust date by -30
     )
     names = mg.columns
@@ -603,20 +603,20 @@ def get_sv_prob(post):
         "sv":sv
         }
 
-def get_sv_mean_quant(sv, msk, draws = True):
+def get_sv_mean_quant(sv, msk, draws = True, qntile=[0.025, 0.975]):
     # binary mask means and quantiles
     #tmask
     sv_mt = sv[:,msk,:]
     sv_mt_m = sv_mt.mean(axis=1) # mean per draw
     if draws:
-        sv_mt_q = np.quantile(sv_mt_m, [0.025, 0.975], axis = 0)
+        sv_mt_q = np.quantile(sv_mt_m, qntile, axis = 0)
         sv_mt_m = sv_mt_m.mean(axis=0) # mean over draws
 
     #fmask
     sv_mf = sv[:,~msk,:]
     sv_mf_m = sv_mf.mean(axis=1)
     if draws:
-        sv_mf_q = np.quantile(sv_mf_m, [0.025, 0.975], axis = 0)
+        sv_mf_q = np.quantile(sv_mf_m, qntile, axis = 0)
         sv_mf_m = sv_mf_m.mean(axis=0)
 
     return {
@@ -627,21 +627,21 @@ def get_sv_mean_quant(sv, msk, draws = True):
     }
 
 # get diff metric 
-def pdp_diff_metric(pdp_val, idx):
+def pdp_diff_metric(pdp_val, idx, qntile = [0.025, 0.975]):
     diff = (pdp_val["sv"][:,:idx,:] - pdp_val["sv"][:,idx:,:]).mean(1) #cov - ncov
     d_m = diff.mean(0)
-    d_q = np.quantile(diff, [0.025, 0.975], axis=0)
+    d_q = np.quantile(diff, qntile, axis=0)
     return {"diff_m": np.round(d_m,3),
              "diff_q": np.round(d_q,3)}
 
-def pdp_rr_metric(pdp_val, idx):
+def pdp_rr_metric(pdp_val, idx, qntile = [0.025, 0.975]):
     r = (pdp_val["prob"][:,idx:,:] / pdp_val["prob"][:,:idx,:]).mean(1) #cov/ncov
     r_m = r.mean(0)
-    r_q = np.quantile(r, [0.025, 0.975], axis=0)
+    r_q = np.quantile(r, qntile, axis=0)
     return {"rr_m": np.round(r_m,3), 
             "rr_q":np.round(r_q,3)}
     
-def pdp_eval(x_sk_coh, bart_model, var_col, values, var_name=None, sample_n=None, uniq_times=None, diff=True, rr = True, return_all=False):
+def pdp_eval(x_sk_coh, bart_model, var_col, values, var_name=None, sample_n=None, uniq_times=None, qntile = [0.025,0.975], diff=True, rr = True, return_all=False):
     # set up dataset
     pdp = get_pdp(x_sk_coh, var_col = var_col, values = values, sample_n=sample_n) 
     # get longform
@@ -653,17 +653,17 @@ def pdp_eval(x_sk_coh, bart_model, var_col, values, var_name=None, sample_n=None
     pdp_val = get_sv_prob(pdp_post)
     # get mean and quantile
     print("getting sv mean and quantile")
-    pdp_mq = get_sv_mean_quant(pdp_val["sv"],pdp[1]["coord"]==1)
+    pdp_mq = get_sv_mean_quant(pdp_val["sv"],pdp[1]["coord"]==1, qntile = qntile)
 
     # get diff and rr
     pdp_diff = None
     pdp_rr = None
     if diff:
         print("getting pdp_diff")
-        pdp_diff = pdp_diff_metric(pdp_val, pdp[1]["cnt"][0])
+        pdp_diff = pdp_diff_metric(pdp_val, pdp[1]["cnt"][0], qntile=qntile)
     if rr:
         print("getting pdp rr")
-        pdp_rr = pdp_rr_metric(pdp_val, pdp[1]["cnt"][0])   
+        pdp_rr = pdp_rr_metric(pdp_val, pdp[1]["cnt"][0], qntile=qntile)   
 
     if return_all:
         return {"pdp_varname":var_name, "pdp_x":pdp_x, "pdp_coords":[pdp_coords, pdp[1]["coord"]], "pdp_post":pdp_post, "pdp_val":pdp_val, "pdp_mq":pdp_mq, "pdp_diff":pdp_diff, "pdp_rr":pdp_rr}

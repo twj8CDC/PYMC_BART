@@ -31,6 +31,10 @@ print(codes)
 
 # COMMAND ----------
 
+ccsr_l.display()
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC # Prevalence
 

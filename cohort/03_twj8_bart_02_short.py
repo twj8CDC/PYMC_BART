@@ -80,12 +80,12 @@ DRAWS = 600
 TUNE = 100
 CORES = 6
 CHAINS = 6
-PDP_ALL = True
+PDP_ALL = False
 WEIGHT = 1
 RUN_NUM = 1
 
 CHECK_CONVERGENCE = False
-
+OOO = False
 
 # COMMAND ----------
 
@@ -462,124 +462,87 @@ mem_chk()
 
 # COMMAND ----------
 
-# sample posterior
-tst_post = bart_model.sample_posterior_predictive(tst["x_tst_test"], tst["x_tst_coords_test"], extend_idata=False) 
+OOO = False
+if OOO:
+    # sample posterior
+    tst_post = bart_model.sample_posterior_predictive(tst["x_tst_test"], tst["x_tst_coords_test"], extend_idata=False) 
 
-# COMMAND ----------
+    tst_val = bmb.get_sv_prob(tst_post)
+    tst_mq = bmb.get_sv_mean_quant(tst_val["sv"],tst["msk_test"])
+    ml.log_dict(dict([(k, tst_mq[k].tolist()) for k in tst_mq.keys()]), f"{CODE}_tst_sv_cov_ncov_mq.json")
 
-tst_val = bmb.get_sv_prob(tst_post)
-tst_mq = bmb.get_sv_mean_quant(tst_val["sv"],tst["msk_test"])
-ml.log_dict(dict([(k, tst_mq[k].tolist()) for k in tst_mq.keys()]), f"{CODE}_tst_sv_cov_ncov_mq.json")
-
-# COMMAND ----------
-
-title = f"{CODE}_tst_sv_prob.png"
-fig = ut.sv_plot(
-    sv= tst_mq, 
-    y_sk_coh = tst["y_sk_coh"], 
-    msk=tst["msk_test"], 
-    y_sk=y_sk, 
-    cc1=cc1, 
-    title = title,
-    strat=True, 
-    cred_int=True, 
-    kpm_all=True, 
-    kpm_sample=True,
-    whr = "mid"
-)
-ml.log_figure(fig, title)
-
-
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## C-Index, Brier Score
-
-# COMMAND ----------
-
-# CI and BRIER in-sample
-ci = sks.metrics.concordance_index_censored(
-    tst["y_sk_coh"]["Status"], 
-    tst["y_sk_coh"]["Survival_in_days"], 
-    tst_val["prob"].mean(axis=0)[:,3]
+    title = f"{CODE}_tst_sv_prob.png"
+    fig = ut.sv_plot(
+        sv= tst_mq, 
+        y_sk_coh = tst["y_sk_coh"], 
+        msk=tst["msk_test"], 
+        y_sk=y_sk, 
+        cc1=cc1, 
+        title = title,
+        strat=True, 
+        cred_int=True, 
+        kpm_all=True, 
+        kpm_sample=True,
+        whr = "mid"
     )
-bs = sks.metrics.brier_score(
-    trn["y_sk_coh"], 
-    tst["y_sk_coh"], 
-    tst_val["sv"].mean(axis=0)[:,1:4], 
-    np.arange(1,4))
-ibs = sks.metrics.integrated_brier_score(
-    trn["y_sk_coh"], 
-    tst["y_sk_coh"], 
-    tst_val["sv"].mean(axis=0)[:,1:4], 
-    np.arange(1,4))
-
-cbsibs_dict = {
-    "ci":np.round(ci[0],4),
-    "bs":(bs[0].tolist(), bs[1].tolist()),
-    "ibs": ibs
-}
-ml.log_dict(cbsibs_dict, f"{CODE}_tst_sv_ci_bs.json")
-cbsibs_dict
-
-# COMMAND ----------
-
-# MAGIC %md 
-# MAGIC ## Calibration
-
-# COMMAND ----------
-
-# tst_calib = ut.calib_metric(tst_val["sv"], tst["y_sk_coh"])
-# fig = ut.plot_calib_diff(tst_calib)
-# ml.log_figure(fig, f"{CODE}_tst_sv_calib_diff_time_rnk.png")
-
-# COMMAND ----------
-
-cb = ut.calib_metric_bart(
-    tst_val["sv"], 
-    tst["y_sk_coh"], 
-    t=4, q = np.arange(0,1,0.1), 
-    single_time=True
-)
-
-title = f"{CODE}_tst_sv_calib_plot.png"
-try:
-    fig = ut.plot_calib_prob(cb, title)
     ml.log_figure(fig, title)
-except:
-    print("No Plot Available")
 
-# COMMAND ----------
+    # CI and BRIER in-sample
+    ci = sks.metrics.concordance_index_censored(
+        tst["y_sk_coh"]["Status"], 
+        tst["y_sk_coh"]["Survival_in_days"], 
+        tst_val["prob"].mean(axis=0)[:,3]
+        )
+    bs = sks.metrics.brier_score(
+        trn["y_sk_coh"], 
+        tst["y_sk_coh"], 
+        tst_val["sv"].mean(axis=0)[:,1:4], 
+        np.arange(1,4))
+    ibs = sks.metrics.integrated_brier_score(
+        trn["y_sk_coh"], 
+        tst["y_sk_coh"], 
+        tst_val["sv"].mean(axis=0)[:,1:4], 
+        np.arange(1,4))
 
-try:
-    cb_dict = {
-        "exp":cb["obs"].tolist(),
-        "pred":cb["pred"].tolist(),
-        "diff":cb["diff"].tolist(),
-        "qt": cb["qtile"].tolist()
+    cbsibs_dict = {
+        "ci":np.round(ci[0],4),
+        "bs":(bs[0].tolist(), bs[1].tolist()),
+        "ibs": ibs
     }
-    print(cb_dict)
-    ml.log_dict(cb_dict, f"{CODE}_tst_sv_calib.json")
-except:
-    print("Failed to save")
+    ml.log_dict(cbsibs_dict, f"{CODE}_tst_sv_ci_bs.json")
+    cbsibs_dict
 
-# COMMAND ----------
+    # calibration
+    cb = ut.calib_metric_bart(
+        tst_val["sv"], 
+        tst["y_sk_coh"], 
+        t=4, q = np.arange(0,1,0.1), 
+        single_time=True
+    )
 
-# diff_dict = {}
-# for idx,i in enumerate(tst_calib["diff"].mean(0)):
-#     diff_dict[f"p_{idx+1}"] = np.round(i,3).tolist()
+    title = f"{CODE}_tst_sv_calib_plot.png"
+    try:
+        fig = ut.plot_calib_prob(cb, title)
+        ml.log_figure(fig, title)
+    except:
+        print("No Plot Available")
 
-# print(diff_dict)
-# ml.log_dict(diff_dict, f"{CODE}_tst_sv_calib_diff_time_rnk.json")
+    try:
+        cb_dict = {
+            "exp":cb["obs"].tolist(),
+            "pred":cb["pred"].tolist(),
+            "diff":cb["diff"].tolist(),
+            "qt": cb["qtile"].tolist()
+        }
+        print(cb_dict)
+        ml.log_dict(cb_dict, f"{CODE}_tst_sv_calib.json")
+    except:
+        print("Failed to save")
 
-# COMMAND ----------
-
-# drop tst_val
-mem_chk()
-del tst_val
-del tst_post
-mem_chk()
+    mem_chk()
+    del tst_val
+    del tst_post
+    mem_chk()
 
 # COMMAND ----------
 
@@ -615,6 +578,10 @@ var_dict
 
 # COMMAND ----------
 
+importlib.reload(bmb)
+
+# COMMAND ----------
+
 # covid pdp
 trn_cov_pdp = bmb.pdp_eval(
     trn["x_sk_coh"], 
@@ -624,19 +591,22 @@ trn_cov_pdp = bmb.pdp_eval(
     var_name="covid_icd_lab", 
     sample_n=10_000, 
     uniq_times=bart_model.uniq_times,
-    return_all = True
+    return_all = True,
+    qntile=[0.055, 0.945]
     )
 
-tst_cov_pdp = bmb.pdp_eval(
-    tst["x_sk_coh"], 
-    bart_model=bart_model,
-    var_col = [5], 
-    values = [[0,1]], 
-    var_name="covid_icd_lab", 
-    sample_n=10_000, 
-    uniq_times=bart_model.uniq_times,
-    return_all=True
-    )
+
+if OOO:
+    tst_cov_pdp = bmb.pdp_eval(
+        tst["x_sk_coh"], 
+        bart_model=bart_model,
+        var_col = [5], 
+        values = [[0,1]], 
+        var_name="covid_icd_lab", 
+        sample_n=10_000, 
+        uniq_times=bart_model.uniq_times,
+        return_all=True
+        )
 
 # COMMAND ----------
 
@@ -658,33 +628,102 @@ ml.log_figure(fig, title)
 
 # COMMAND ----------
 
-title = f"{CODE}_tst_pdp_sv_plot.png"
-fig = ut.sv_plot(
-    sv= tst_cov_pdp["pdp_mq"], 
-    y_sk_coh = tst["y_sk_coh"], 
-    msk=tst["msk_test"], 
-    y_sk=y_sk, 
-    title = title,
-    cc1=cc1, 
-    strat=True, 
-    cred_int=True, 
-    kpm_all=False, 
-    kpm_sample=False,
-    whr = "mid"
-)
-ml.log_figure(fig, title)
+trn_cov_pdp["pdp_val"]["prob"
+
+# np.quantile(pdp_rr.mean(2).mean(1), [0.025, 0.975])
+# np.quantile(pdp_rr.mean(2).mean(1), [0.055, 0.945])
 
 # COMMAND ----------
 
-out = {}
-for n,s in [("trn_rr",trn_cov_pdp["pdp_rr"]), ("tst_rr",tst_cov_pdp["pdp_rr"]), 
-            ("trn_diff",trn_cov_pdp["pdp_diff"]), ("tst_diff",tst_cov_pdp["pdp_diff"])]:
-    tmp = {}
-    for k in s.keys():
-        tmp[k] = s[k].tolist()
-    out[n] = tmp
-ml.log_dict(out, f"{CODE}_pdp_covid_trn_tst.json")
-out
+pdp_rr = trn_cov_pdp["pdp_val"]["prob"][:,SAMPLE_TRN:,:]/trn_cov_pdp["pdp_val"]["prob"][:,:SAMPLE_TRN,:]
+
+
+# pd
+pdp_m = pdp_rr.mean(1).mean(1)
+prob_dir_up = np.round(pdp_m[pdp_m > 1].shape[0]/pdp_m.shape[0],3)
+prob_dir_down = np.round(pdp_m[pdp_m < 1].shape[0]/pdp_m.shape[0],3)
+
+print(prob_dir_up, prob_dir_down)
+
+# 89% rope
+qtile = np.quantile(pdp_m, [0.055, 0.945])
+ci_89 = pdp_m[(pdp_m >= qtile[0]) & (pdp_m <= qtile[1])]
+
+rope_range = [.99,1.01]
+rope_msk = (ci_89 < rope_range[0]) | (ci_89 > rope_range[1])
+rope_pos = np.round(ci_89[rope_msk].shape[0]/ci_89.shape[0], 3)
+rope_neg = np.round(ci_89[~rope_msk].shape[0]/ci_89.shape[0],3)
+
+print(rope_pos, rope_neg)
+
+pd_rope_dict = {
+    "rope_range":rope_range,
+    "pd_pos":prob_dir_up,
+    "pd_neg":prob_dir_down,
+    "rope_sig": rope_pos,
+    "rope_unsig":rope_neg
+}
+
+title = f"{CODE}_pdp_rope.json"
+ml.log_dict(pd_rope_dict, title)
+
+# COMMAND ----------
+
+# SAVE PDPD OUTPUT
+draw, n, t = trn_cov_pdp["pdp_val"]["prob"].shape
+tmptable = pd.DataFrame(trn_cov_pdp["pdp_val"]["prob"].reshape(draw*n, t).astype("float32"))
+
+tmptable_dict = {"draw":draw, "n":n, "t":t}
+title = f"{CODE}_pdp_trn_prob"
+# print(tmptable)
+ml.log_table(tmptable, title + ".json")
+ml.log_dict(tmptable_dict, title+"_dict.json")
+
+del tmptable
+mem_chk()
+
+# COMMAND ----------
+
+OOO=False
+if OOO:
+    title = f"{CODE}_tst_pdp_sv_plot.png"
+    fig = ut.sv_plot(
+        sv= tst_cov_pdp["pdp_mq"], 
+        y_sk_coh = tst["y_sk_coh"], 
+        msk=tst["msk_test"], 
+        y_sk=y_sk, 
+        title = title,
+        cc1=cc1, 
+        strat=True, 
+        cred_int=True, 
+        kpm_all=False, 
+        kpm_sample=False,
+        whr = "mid"
+    )
+    ml.log_figure(fig, title)
+
+# COMMAND ----------
+
+if OOO:
+    out = {}
+    for n,s in [("trn_rr",trn_cov_pdp["pdp_rr"]), ("tst_rr",tst_cov_pdp["pdp_rr"]), 
+                ("trn_diff",trn_cov_pdp["pdp_diff"]), ("tst_diff",tst_cov_pdp["pdp_diff"])]:
+        tmp = {}
+        for k in s.keys():
+            tmp[k] = s[k].tolist()
+        out[n] = tmp
+    ml.log_dict(out, f"{CODE}_pdp_covid_trn_tst.json")
+    out
+else:
+    out = {}
+    for n,s in [("trn_rr",trn_cov_pdp["pdp_rr"]),  
+                ("trn_diff",trn_cov_pdp["pdp_diff"])]:
+        tmp = {}
+        for k in s.keys():
+            tmp[k] = s[k].tolist()
+        out[n] = tmp
+    ml.log_dict(out, f"{CODE}_pdp_covid_trn.json")
+    print(out)
 
 # COMMAND ----------
 
@@ -692,7 +731,8 @@ out
 mem_chk()
 
 del trn_cov_pdp
-del tst_cov_pdp
+if OOO:
+    del tst_cov_pdp
 
 mem_chk()
 
@@ -821,33 +861,35 @@ except:
 
 # COMMAND ----------
 
-cph_sv = c.predict_survival_function(tmp_tst, 365).T.to_numpy().squeeze()
-tmp_sk_y = bmb.get_y_sklearn(tmp_tst["ccsr_ind_p3"], tmp_tst["ccsr_tt_p3"])
-cb2 = ut.calib_metric_cph(cph_sv, 
-                               tmp_sk_y, 
-                               t=4, 
-                               q = np.arange(0,1,0.1), 
-                               single_time=True)
-title =f"{CODE}_tst_cph_sv_calib_plot.png"
-try:
-    fig = ut.plot_calib_prob(cb2, title)
-    ml.log_figure(fig, title)
-except:
-    print("No Plot Available")
+if OOO:
+    cph_sv = c.predict_survival_function(tmp_tst, 365).T.to_numpy().squeeze()
+    tmp_sk_y = bmb.get_y_sklearn(tmp_tst["ccsr_ind_p3"], tmp_tst["ccsr_tt_p3"])
+    cb2 = ut.calib_metric_cph(cph_sv, 
+                                tmp_sk_y, 
+                                t=4, 
+                                q = np.arange(0,1,0.1), 
+                                single_time=True)
+    title =f"{CODE}_tst_cph_sv_calib_plot.png"
+    try:
+        fig = ut.plot_calib_prob(cb2, title)
+        ml.log_figure(fig, title)
+    except:
+        print("No Plot Available")
 
 # COMMAND ----------
 
-try:
-    cb_dict = {
-        "exp":cb2["obs"].tolist(),
-        "pred":cb2["pred"].tolist(),
-        "diff":cb2["diff"].tolist(),
-        "qt": cb2["qtile"].tolist()
-    }
-    print(cb_dict)
-    ml.log_dict(cb_dict, f"{CODE}_cph_tst_sv_calib.json")
-except:
-    print("Failed to save")
+if OOO:
+    try:
+        cb_dict = {
+            "exp":cb2["obs"].tolist(),
+            "pred":cb2["pred"].tolist(),
+            "diff":cb2["diff"].tolist(),
+            "qt": cb2["qtile"].tolist()
+        }
+        print(cb_dict)
+        ml.log_dict(cb_dict, f"{CODE}_cph_tst_sv_calib.json")
+    except:
+        print("Failed to save")
 
 # COMMAND ----------
 

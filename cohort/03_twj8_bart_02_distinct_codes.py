@@ -49,11 +49,11 @@ np_seed = int(np.ceil(time.time()))
 # COMMAND ----------
 
 # GLOBALS
-CODE = "CIR"
+CODE = 'NEO059'
 RUN_NAME = f"{CODE}_run_01"
 EXP_ID = 502851330942627
 TIME_SCALE = 91.5
-BALANCE = False
+BALANCE = True
 SAMPLE_TRN = 10_000
 SAMPLE_TST = 10_000
 
@@ -77,14 +77,13 @@ SPLIT_RULES =  [
     "pmb.OneHotSplitRule()" # i_o_ind
     ]
 DRAWS = 600
-TUNE = 100
-CORES = 6
-CHAINS = 6
+TUNE = 600
+CORES = 4
+CHAINS = 4
 PDP_ALL = True
 WEIGHT = 1
 RUN_NUM = 1
 
-CHECK_CONVERGENCE = False
 
 
 # COMMAND ----------
@@ -183,15 +182,19 @@ print(model_dict_main)
 
 # COMMAND ----------
 
-# ccsr_l = spark.table("cdh_premier_exploratory.twj8_pat_ccsr_long_f_06")
+importlib.reload(bmb)
+
+# COMMAND ----------
+
+ccsr_l = spark.table("cdh_premier_exploratory.twj8_pat_ccsr_long_f_06")
 # Load ccsr 
-ccsr_s = spark.table("cdh_premier_exploratory.twj8_pat_ccsr_short_f_06")
+# ccsr_s = spark.table("cdh_premier_exploratory.twj8_pat_ccsr_short_f_06")
 cov = spark.table("cdh_premier_exploratory.twj8_pat_covariates_f_07")
 
 mem_chk()
 
 # Get the datasets data
-cc1, cc_name = bmb.get_sk_sp(ccsr_s, cov, CODE)
+cc1, cc_name = bmb.get_sk_sp(ccsr_l, cov, CODE, code_type="code")
 
 mem_chk()
 
@@ -246,6 +249,10 @@ tst = bmb.get_coh(y_sk, cc1, sample_n = SAMPLE_TST, balance=False, train=False, 
 
 # COMMAND ----------
 
+
+
+# COMMAND ----------
+
 trn_counts = np.unique(trn["x_sk_coh"][:,5], return_counts=True)
 tst_counts = np.unique(tst["x_sk_coh"][:,5], return_counts=True)
 trn_cov_pos = np.unique(trn["y_sk_coh"][trn["x_sk_coh"][:,5] == 1]["Status"], return_counts=True)
@@ -257,20 +264,21 @@ counts_dict = {
     "trn":{"ncov":int(trn_counts[1][0]),
            "cov":int(trn_counts[1][1]),
            "prop_cov": float(trn_counts[1][1]/SAMPLE_TRN),
-           "cov_pos":int(trn_cov_pos[1][1]),
-           "ncov_pos":int(trn_ncov_pos[1][1])
+           "ncov_pos":int(trn_cov_pos[1][1]),
+           "cov_pos":int(trn_ncov_pos[1][1])
            },
     "tst":{"ncov":int(tst_counts[1][0]),
            "cov":int(tst_counts[1][1]),
-           "prop_cov": float(tst_counts[1][1]/SAMPLE_TST),
-           "cov_pos":int(tst_cov_pos[1][1]),
-           "ncov_pos":int(tst_ncov_pos[1][1])
+       "prop_cov": float(tst_counts[1][1]/SAMPLE_TST),
+       "ncov_pos":int(tst_cov_pos[1][1]),
+           "cov_pos":int(tst_ncov_pos[1][1])
            }
 }
 ml.log_dict(counts_dict, f"{CODE}_samples_counts.json")
 
 print(counts_dict)
 mem_chk()
+
 
 # COMMAND ----------
 
@@ -297,6 +305,9 @@ bart_model = bmb.BartSurvModel(model_config=model_dict, sampler_config=sampler_d
 # COMMAND ----------
 
 # # fit model
+# bart_model.fit(trn["coh_y"], trn["coh_x"], trn["coh_w"], trn["coh_coords"])
+# # sample posterior
+# post = bart_model.sample_posterior_predictive(trn["x_tst"], trn["tst_coords"], extend_idata=True)
 
 # fit model
 bart_model.fit(trn["coh_y"].astype(np.float32),
@@ -306,13 +317,6 @@ bart_model.fit(trn["coh_y"].astype(np.float32),
                )
 # sample posterior
 post = bart_model.sample_posterior_predictive(trn["x_tst"], trn["tst_coords"], extend_idata=False)
-
-# COMMAND ----------
-
-# CHECK_CONVERGENCE = True
-if CHECK_CONVERGENCE:
-    import pymc_bart as pmb
-    pmb.plot_convergence(bart_model.idata, var_name="mu")
 
 # COMMAND ----------
 
@@ -329,19 +333,6 @@ trn_val = bmb.get_sv_prob(post)
 trn_mq = bmb.get_sv_mean_quant(trn_val["sv"],trn["msk"])
 
 ml.log_dict(dict([(k, trn_mq[k].tolist()) for k in trn_mq.keys()]), f"{CODE}_trn_sv_cov_ncov_mq.json")
-
-# COMMAND ----------
-
-draw, n, t = trn_val["prob"].shape
-tmptable = pd.DataFrame(trn_val["prob"].reshape(draw*n, t).astype("float32"))
-
-tmptable_dict = {"draw":draw, "n":n, "t":t}
-title = f"{CODE}_post_val"
-ml.log_table(tmptable, title + ".json")
-ml.log_dict(tmptable_dict, title+"_dict.json")
-
-del tmptable
-mem_chk()
 
 # COMMAND ----------
 
@@ -368,22 +359,30 @@ ml.log_figure(fig, title)
 
 # COMMAND ----------
 
+bart_model.uniq_times.shape
+
+# COMMAND ----------
+
 # CI and BRIER in-sample
+max_t = bart_model.uniq_times.shape[0]
 ci = sks.metrics.concordance_index_censored(
     trn["y_sk_coh"]["Status"], 
     trn["y_sk_coh"]["Survival_in_days"], 
-    trn_val["prob"].mean(axis=0)[:,3]
+    trn_val["prob"].mean(axis=0)[:,max_t-1]
     )
 bs = sks.metrics.brier_score(
     trn["y_sk_coh"], 
     trn["y_sk_coh"], 
-    trn_val["sv"].mean(axis=0)[:,1:4], 
-    np.arange(1,4))
-ibs = sks.metrics.integrated_brier_score(
-    trn["y_sk_coh"], 
-    trn["y_sk_coh"], 
-    trn_val["sv"].mean(axis=0)[:,1:4], 
-    np.arange(1,4))
+    trn_val["sv"].mean(axis=0)[:,1:max_t-1], 
+    np.arange(1,max_t-1))
+try:
+    ibs = sks.metrics.integrated_brier_score(
+        trn["y_sk_coh"], 
+        trn["y_sk_coh"], 
+        trn_val["sv"].mean(axis=0)[:,1:max_t-1], 
+        np.arange(1,max_t-1))
+except:
+    ibs=np.NAN
 
 cbsibs_dict = {
     "ci":np.round(ci[0],4),
@@ -411,14 +410,14 @@ cbsibs_dict
 
 # COMMAND ----------
 
-cb = ut.calib_metric_bart(
-    trn_val["sv"], 
-    trn["y_sk_coh"], 
-    t=4, q = np.arange(0,1,0.1), 
-    single_time=True
-)
 title = f"{CODE}_trn_sv_calib_plot.png"
 try:
+    cb = ut.calib_metric_bart(
+        trn_val["sv"], 
+        trn["y_sk_coh"], 
+        t=4, q = np.arange(0,1,0.1), 
+        single_time=True
+    )
     fig = ut.plot_calib_prob(cb, title)
     ml.log_figure(fig, title)
 except:
@@ -530,9 +529,9 @@ cbsibs_dict
 
 # COMMAND ----------
 
-# tst_calib = ut.calib_metric(tst_val["sv"], tst["y_sk_coh"])
-# fig = ut.plot_calib_diff(tst_calib)
-# ml.log_figure(fig, f"{CODE}_tst_sv_calib_diff_time_rnk.png")
+tst_calib = ut.calib_metric(tst_val["sv"], tst["y_sk_coh"])
+fig = ut.plot_calib_diff(tst_calib)
+ml.log_figure(fig, f"{CODE}_tst_sv_calib_diff_time_rnk.png")
 
 # COMMAND ----------
 
@@ -566,12 +565,12 @@ except:
 
 # COMMAND ----------
 
-# diff_dict = {}
-# for idx,i in enumerate(tst_calib["diff"].mean(0)):
-#     diff_dict[f"p_{idx+1}"] = np.round(i,3).tolist()
+diff_dict = {}
+for idx,i in enumerate(tst_calib["diff"].mean(0)):
+    diff_dict[f"p_{idx+1}"] = np.round(i,3).tolist()
 
-# print(diff_dict)
-# ml.log_dict(diff_dict, f"{CODE}_tst_sv_calib_diff_time_rnk.json")
+print(diff_dict)
+ml.log_dict(diff_dict, f"{CODE}_tst_sv_calib_diff_time_rnk.json")
 
 # COMMAND ----------
 
