@@ -332,16 +332,16 @@ ml.log_dict(dict([(k, trn_mq[k].tolist()) for k in trn_mq.keys()]), f"{CODE}_trn
 
 # COMMAND ----------
 
-draw, n, t = trn_val["prob"].shape
-tmptable = pd.DataFrame(trn_val["prob"].reshape(draw*n, t).astype("float32"))
+# draw, n, t = trn_val["prob"].shape
+# tmptable = pd.DataFrame(trn_val["prob"].reshape(draw*n, t).astype("float32"))
 
-tmptable_dict = {"draw":draw, "n":n, "t":t}
-title = f"{CODE}_post_val"
-ml.log_table(tmptable, title + ".json")
-ml.log_dict(tmptable_dict, title+"_dict.json")
+# tmptable_dict = {"draw":draw, "n":n, "t":t}
+# title = f"{CODE}_post_val"
+# ml.log_table(tmptable, title + ".json")
+# ml.log_dict(tmptable_dict, title+"_dict.json")
 
-del tmptable
-mem_chk()
+# del tmptable
+# mem_chk()
 
 # COMMAND ----------
 
