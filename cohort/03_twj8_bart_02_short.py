@@ -583,13 +583,14 @@ importlib.reload(bmb)
 # COMMAND ----------
 
 # covid pdp
+PDP_SAMPLE = 5000
 trn_cov_pdp = bmb.pdp_eval(
     trn["x_sk_coh"], 
     bart_model = bart_model, 
     var_col = [5], 
     values = [[0,1]],
     var_name="covid_icd_lab", 
-    sample_n=10_000, 
+    sample_n=PDP_SAMPLE, 
     uniq_times=bart_model.uniq_times,
     return_all = True,
     qntile=[0.055, 0.945]
@@ -603,7 +604,7 @@ if OOO:
         var_col = [5], 
         values = [[0,1]], 
         var_name="covid_icd_lab", 
-        sample_n=10_000, 
+        sample_n=PDP_SAMPLE, 
         uniq_times=bart_model.uniq_times,
         return_all=True
         )
@@ -628,7 +629,7 @@ ml.log_figure(fig, title)
 
 # COMMAND ----------
 
-pdp_rr = trn_cov_pdp["pdp_val"]["prob"][:,SAMPLE_TRN:,:]/trn_cov_pdp["pdp_val"]["prob"][:,:SAMPLE_TRN,:]
+pdp_rr = trn_cov_pdp["pdp_val"]["prob"][:,PDP_SAMPLE:,:]/trn_cov_pdp["pdp_val"]["prob"][:,:PDP_SAMPLE,:]
 
 
 # pd
