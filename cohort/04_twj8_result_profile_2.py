@@ -34,7 +34,7 @@ def get_runs_by_run_num(exp, num=None, finished = True):
         runs = runs[runs["tags.mlflow.runName"].str.contains(str(num)+"$")]
     return runs.reset_index()
 
-runs1 = get_runs_by_run_num(exp, 4)
+runs1 = get_runs_by_run_num(exp, 5)
 
 # COMMAND ----------
 
@@ -42,8 +42,8 @@ runs1
 
 # COMMAND ----------
 
-uri = runs1[runs1["tags.mlflow.runName"] == "pcc_EXT_4"]["artifact_uri"].to_numpy()
-runid = runs1[runs1["tags.mlflow.runName"] == "pcc_EXT_4"]["run_id"].to_numpy()
+uri = runs1[runs1["tags.mlflow.runName"] == "pcc_BLD_5"]["artifact_uri"].to_numpy()
+runid = runs1[runs1["tags.mlflow.runName"] == "pcc_BLD_5"]["run_id"].to_numpy()
 print(uri[0])
 print(runid[0])
 
@@ -54,11 +54,11 @@ client.list_artifacts(runid[0])
 
 # COMMAND ----------
 
-d = np.array(ml.artifacts.load_dict(uri[0] + "/" + "EXT_pdp_trn_prob.json")["data"], dtype="float32")
+d = np.array(ml.artifacts.load_dict(uri[0] + "/" + "BLD_pdp_trn_prob.json")["data"], dtype="float32")
 
 # COMMAND ----------
 
-d2 = ml.artifacts.load_dict(uri[0] + "/" + "EXT_pdp_trn_prob_dict.json")
+d2 = ml.artifacts.load_dict(uri[0] + "/" + "BLD_pdp_trn_prob_dict.json")
 d2
 
 # COMMAND ----------
@@ -76,7 +76,7 @@ d.shape
 
 # COMMAND ----------
 
-ph = (d[:,10000:,:]/d[:,:10000,:]).mean(1).mean(1)
+ph = (d[:,5000:,:]/d[:,:5000,:]).mean(1).mean(1)
 
 # COMMAND ----------
 
@@ -86,14 +86,14 @@ phq
 
 # COMMAND ----------
 
-plt.hist(d[:,10000:,3].mean(1),alpha=0.2, bins=50)
-plt.hist(d[:,:10000,3].mean(1), alpha=0.2, bins = 50)
+plt.hist(d[:,5000:,3].mean(1),alpha=0.2, bins=50)
+plt.hist(d[:,:5000,3].mean(1), alpha=0.2, bins = 50)
 
 
 # COMMAND ----------
 
 ph_qnt = np.quantile(ph, [0.055,0.945])
-plt.hist(ph, bins = 30)
+plt.hist(ph, bins = 100)
 plt.axvline(ph_qnt[0])
 plt.axvline(ph_qnt[1])
 

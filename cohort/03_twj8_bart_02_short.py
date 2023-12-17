@@ -583,7 +583,7 @@ importlib.reload(bmb)
 # COMMAND ----------
 
 # covid pdp
-PDP_SAMPLE = 5000
+PDP_SAMPLE = 10000
 trn_cov_pdp = bmb.pdp_eval(
     trn["x_sk_coh"], 
     bart_model = bart_model, 
